@@ -1,0 +1,21 @@
+{
+  "name": "MK Net ISP SelfCare",
+  "short_name": "MK Net",
+  "description": "Commercial-Grade ISP Portal & AI Voice Platform",
+  "start_url": "/mknet/index.php",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/mknet/assets/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/mknet/assets/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

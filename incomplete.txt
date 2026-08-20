@@ -1,0 +1,30 @@
+eituku step kivabe complete korbo in details e kore dao amar jonno...===========🛠 Integration Overview
+Both Bkash and Nagad provide merchant APIs.
+
+Bkash → official Merchant API (token, payment create, execute, query).
+
+Nagad → PHP SDK available (xenon/nagad-api) for easy integration.
+
+👉 Ei APIs require merchant account credentials (App Key, App Secret, Merchant ID).
+
+✅ Step‑by‑Step Integration
+Step 1: Install SDKs
+Using Composer in project root:
+
+bash
+composer require xenon/nagad-api
+composer require bkash/payment
+Step 2: Configure Credentials
+Create .env file in project root:
+
+Code
+BKASH_APP_KEY=your_app_key
+BKASH_APP_SECRET=your_app_secret
+BKASH_USERNAME=your_username
+BKASH_PASSWORD=your_password
+BKASH_BASE_URL=https://tokenized.pay.bkash.com
+
+NAGAD_MERCHANT_ID=your_merchant_id
+NAGAD_MERCHANT_NUMBER=your_number
+NAGAD_API_KEY=your_api_key
+NAGAD_API_SECRET=your_api_secret===================

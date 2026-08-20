@@ -1,0 +1,14 @@
+# Real credentials - never commit this, only the .example.php template
+config/services.php
+
+# Logs
+storage/logs/*.log
+storage/logs/*.log.1
+
+# Backups
+storage/backups/*.sql
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
+*.swp
