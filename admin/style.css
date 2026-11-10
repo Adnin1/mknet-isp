@@ -1174,3 +1174,98 @@ button, .btn, a.btn, input[type="submit"], input[type="button"] {
     flex-basis: auto;
   }
 }
+
+
+/* MKNET ADMIN VISUAL REFINEMENT — quiet enterprise dashboard */
+:root {
+  --bg-dark: #0b1220;
+  --bg-card: #111c2c;
+  --bg-card-hover: #162338;
+  --border-color: #26364b;
+  --border-glow: rgba(96, 165, 250, .36);
+  --accent-primary: #3b82f6;
+  --accent-secondary: #64748b;
+  --text-main: #e8eef6;
+  --text-muted: #a8b5c7;
+}
+body, .admin-layout, .admin-main-wrapper, .admin-container, .main, .main-content {
+  background-color: #0b1220 !important;
+}
+.sidebar, .top-navbar, .admin-header {
+  background: #101b2b !important;
+  border-color: #26364b !important;
+  box-shadow: none !important;
+}
+.sidebar {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.sidebar ul.menu li a {
+  border: 1px solid transparent;
+  border-radius: 9px !important;
+  transition: background-color .16s ease, color .16s ease,
+              border-color .16s ease !important;
+}
+.sidebar ul.menu li a:hover, .sidebar ul.menu li a.active {
+  background: rgba(59, 130, 246, .12) !important;
+  border-color: rgba(96, 165, 250, .22) !important;
+  color: #bfdbfe !important;
+  transform: none !important;
+}
+.card, .admin-card, .bento-box, .stat-card,
+.dashboard-grid > div {
+  background: #111c2c !important;
+  border: 1px solid #26364b !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition: background-color .18s ease, border-color .18s ease,
+              box-shadow .18s ease !important;
+  will-change: auto !important;
+}
+.card:hover, .admin-card:hover, .bento-box:hover, .stat-card:hover,
+.dashboard-grid > div:hover {
+  transform: none !important;
+  background: #162338 !important;
+  border-color: rgba(96, 165, 250, .36) !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .22) !important;
+}
+.btn, button.btn, input[type="submit"], a.btn, .action-btn {
+  transition: background-color .16s ease, border-color .16s ease,
+              color .16s ease, box-shadow .16s ease, filter .16s ease !important;
+}
+.btn::before, button.btn::before, input[type="submit"]::before,
+a.btn::before, .action-btn::before {
+  animation: none !important;
+  opacity: 0 !important;
+}
+.btn:hover, button.btn:hover, input[type="submit"]:hover,
+a.btn:hover, .action-btn:hover {
+  filter: brightness(1.05);
+  transform: none !important;
+}
+.stat-card i.fa-solid:first-child, .admin-card i.fa-solid:first-child,
+.float-badge {
+  animation: none !important;
+  will-change: auto !important;
+}
+.progress-bar, .meter-bar, .stat-bar-fill, .bandwidth-meter, .bar-fill,
+.progress > div {
+  animation: none !important;
+  box-shadow: none !important;
+  transition: width .28s ease !important;
+}
+table tbody tr:hover td {
+  background: rgba(59, 130, 246, .055) !important;
+}
+:focus-visible {
+  outline: 3px solid rgba(96, 165, 250, .78) !important;
+  outline-offset: 2px !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}
