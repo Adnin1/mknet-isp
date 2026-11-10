@@ -1,465 +1,545 @@
+/* ==========================================================================
+   MK NET 2.0 SUPREME ENTERPRISE DESIGN SYSTEM & MOTION ENGINE
+   Inspired by RLY Network, AltLayer, ChronicleHQ, ChainGPT & Awwwards Standard
+   Living Radar Points • Flowing Shimmer Bars • Organic Floats • 320px-4K Matrix
+   Micro-Transition & Animation Engine (RLY, AltLayer, ChronicleHQ, ChainGPT)
+   ========================================================================== */
+
+/* --- 1. Master Design Tokens & High-Contrast Typography --- */
 :root {
-  --bg:#0e1117;
-  --card:#161a22;
-  --text:#e6edf3;
-  --muted:#9da7b3;
-  --accent:#2f81f7;
-  --ok:#22c55e;
+  --bg-deep: #060913;
+  --bg-card: rgba(15, 23, 42, 0.72);
+  --bg-card-hover: rgba(30, 41, 59, 0.82);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-glow: rgba(99, 102, 241, 0.5);
+  
+  --primary-indigo: #6366f1;
+  --primary-purple: #8b5cf6;
+  --cyber-cyan: #06b6d4;
+  --neon-emerald: #10b981;
+  --amber-warning: #f59e0b;
+  --danger-crimson: #ef4444;
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+  
+  --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 16px 40px -8px rgba(0, 0, 0, 0.65), 0 0 25px rgba(99, 102, 241, 0.2);
+  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.35);
 }
 
-* { box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 body {
   margin: 0;
-  background-color: var(--bg);
-  background-image: url('images/bg-pattern.jpg'); /* assets/style.css → assets/images/bg-pattern.jpg */
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center;
-  color: var(--text);
-  font-family: system-ui, Arial;
+  background-color: var(--bg-deep);
+  color: var(--text-main);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+  position: relative;
+  line-height: 1.6;
 }
 
+/* Dedicated Fixed Background Layer (Zero Mobile Scroll Repaint Lag) */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5); /* dark overlay */
+  width: 100%;
+  height: 100vh;
+  background-image: 
+    radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(99, 102, 241, 0.04) 0%, transparent 60%);
+  background-size: 28px 28px, 100% 100%;
+  pointer-events: none;
   z-index: -1;
+  will-change: transform;
 }
 
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 16px;
+/* --- 2. Master Responsive Enclosures --- */
+.container, .wrap, .main-content, .dashboard-container {
+  width: 100% !important;
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding: 24px 20px !important;
+  box-sizing: border-box !important;
 }
 
-.site-header {
-  background: #0b0e14;
-  border-bottom: 1px solid #202635;
+/* Fluid Headings (Zero Mobile Wrapping Blowouts) */
+h1, .h1 {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(1.85rem, 5.5vw, 3.4rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.03em !important;
+  margin-top: 0;
 }
 
-.logo {
-  color: #fff;
-  text-decoration: none;
-  font-weight: 700;
+h2, .h2 {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(1.4rem, 4vw, 2.2rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.02em !important;
+  margin-top: 0;
 }
 
-nav a {
-  color: var(--muted);
-  margin: 0 8px;
-  text-decoration: none;
+h3, .h3 {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(1.15rem, 3vw, 1.5rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  margin-top: 0;
 }
 
-nav a:hover { color: #fff; }
-
-.hero {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  align-items: center;
-  padding: 24px 0;
+p {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin-top: 0;
 }
 
-.hero img {
-  width: 100%;
-  border-radius: 10px;
+/* --- 3. Living Radar Pulse Indicators (Points & Nodes) --- */
+@keyframes radarPulseGreen {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
-.btn {
+@keyframes radarPulseCyan {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.7); }
+  70% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(6, 182, 212, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+}
+
+@keyframes radarPulseYellow {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+  70% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+@keyframes radarPulseRed {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes radarPulseIndigo {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+  70% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+.status-dot, .live-dot, .pulse-point, .indicator-dot, .online-dot, .status-indicator, .beacon-node {
   display: inline-block;
-  background: var(--accent);
-  color: white;
-  padding: 10px 14px;
-  border-radius: 8px;
-  text-decoration: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--neon-emerald);
+  animation: radarPulseGreen 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(3,1fr);
-  gap: 16px;
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(8px);
 }
 
-.card {
-  background: var(--card);
-  padding: 16px;
-  border: 1px solid #202635;
-  border-radius: 10px;
+.status-pill.operational, .status-pill.active, .status-pill.success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-.input, select, textarea {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #202635;
-  background: #0b0e14;
-  color: var(--text);
+.status-pill.warning, .status-pill.pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.status-pill.warning .status-dot {
+  background: var(--amber-warning);
+  animation: radarPulseYellow 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-label {
-  display: block;
-  margin: 8px 0 4px;
-  color: #c9d1d9;
+.status-pill.danger, .status-pill.suspended, .status-pill.offline {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.status-pill.danger .status-dot {
+  background: var(--danger-crimson);
+  animation: radarPulseRed 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
+.status-pill:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
 }
 
-.table th, .table td {
-  border: 1px solid #202635;
-  padding: 10px;
-  text-align: left;
+/* --- 4. Flowing Gradient Shimmer Bars (Progress & Bandwidth) --- */
+@keyframes shimmerFlow {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-.site-footer {
-  border-top: 1px solid #202635;
-  margin-top: 24px;
+@keyframes barGlowPulse {
+  0%, 100% { opacity: 0.95; filter: brightness(1); }
+  50% { opacity: 1; filter: brightness(1.22); }
 }
 
-.footer-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 16px;
+.progress-bar, .meter-bar, .stat-bar-fill, .bandwidth-meter, .bar-fill, .progress > div, .quota-meter-fill, .quota-bar {
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 35%, #06b6d4 70%, #6366f1 100%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmerFlow 3.5s linear infinite, barGlowPulse 2.5s ease-in-out infinite !important;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.45) !important;
+  border-radius: 9999px;
+  height: 100%;
 }
 
-.tiny {
-  color: var(--muted);
-  text-align: center;
-  padding: 8px;
+/* --- 5. Organic Floating Animations (Icons, Badges, Features) --- */
+@keyframes floatOrganic {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(1deg); }
 }
 
-.social img {
-  height: 20px;
-  margin-right: 8px;
-  filter: invert(85%);
+@keyframes floatOrganicAlt {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-3px) rotate(-1deg); }
 }
 
-.alert {
-  padding: 10px;
-  border-radius: 8px;
-  margin: 10px 0;
+.float-badge, .floating-icon, .hero-icon-float, .icon-pill, .badge-float, 
+.stat-card i.fa-solid:first-child, .bento-box i.fa-solid:first-child, 
+.admin-card i.fa-solid:first-child, .feature-card i.fa-solid:first-child,
+.card i.fa-solid:first-child, .icon-floating {
+  animation: floatOrganic 3.8s ease-in-out infinite;
+  display: inline-block;
+  will-change: transform;
 }
 
-.success {
-  background: #0c2f1e;
-  color: #9be7c4;
-  border: 1px solid #1f6f49;
+.badge-secondary, .chip-floating, .plan-badge-float {
+  animation: floatOrganicAlt 4.4s ease-in-out infinite 0.75s;
+  display: inline-block;
+  will-change: transform;
 }
 
-.error {
-  background: #2f1515;
-  color: #f29f9f;
-  border: 1px solid #803b3b;
+/* --- 6. Glassmorphic Card Micro-Transitions (Awwwards Standard) --- */
+.card, .glass-card, .pkg-card, .stat-card, .admin-card, .bento-box, 
+.feature-card, .plan-card, .dashboard-grid > div {
+  background: var(--bg-card) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-subtle) !important;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: transform, box-shadow;
 }
 
-/* ==========================================
-   Comprehensive Responsive Layout & Mobile Fixes
-   ========================================== */
-html, body {
-  max-width: 100vw;
-  overflow-x: hidden !important;
+.card:hover, .glass-card:hover, .pkg-card:hover, .stat-card:hover, 
+.admin-card:hover, .bento-box:hover, .feature-card:hover, .plan-card:hover, 
+.dashboard-grid > div:hover {
+  transform: translateY(-3px) !important;
+  border-color: var(--border-glow) !important;
+  box-shadow: var(--shadow-elevated) !important;
 }
 
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+/* Grid Containers Remain Rock Steady */
+.grid, .grid-2, .grid-3, .grid-4, .dashboard-grid, .packages-grid, .hero {
+  transform: none !important;
 }
 
-@media (max-width: 992px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .footer-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
+/* --- 7. Buttons & Interactive Tactile Controls --- */
+button, a, input[type="submit"], input[type="button"], select, 
+.btn, .chip, .badge, .status-pill, .nav-link, .menu-item, [role="button"], [onclick] {
+  cursor: pointer !important;
 }
 
-@media (max-width: 768px) {
-  .container {
-    padding: 12px;
-  }
-  .hero {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-  .grid, .footer-grid {
-    grid-template-columns: 1fr;
-  }
-  .table {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .btn {
-    width: 100%;
-    text-align: center;
-    box-sizing: border-box;
-    margin-bottom: 8px;
-    padding: 12px 16px;
-  }
-}
-
-
-
-/* =========================================================
-   Dribbble-Style Animated Buttons, 3D Tilt & Glow Effects
-   ========================================================= */
-
-@keyframes dribbbleFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
-}
-
-@keyframes buttonGlowPulse {
-  0%, 100% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4), 0 0 15px rgba(99, 102, 241, 0.2); }
-  50% { box-shadow: 0 8px 30px rgba(99, 102, 241, 0.7), 0 0 25px rgba(139, 92, 246, 0.6); }
-}
-
-@keyframes shimmerSweep {
-  0% { transform: translateX(-150%) rotate(25deg); }
-  100% { transform: translateX(200%) rotate(25deg); }
-}
-
-@keyframes neonGlowRing {
-  0%, 100% { border-color: rgba(99, 102, 241, 0.6); box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
-  50% { border-color: rgba(168, 85, 247, 0.8); box-shadow: 0 0 25px rgba(168, 85, 247, 0.5); }
-}
-
-/* Master Animated Dribbble Button System */
-.btn, button, input[type="submit"], input[type="button"], a.btn, .action-btn {
-  position: relative;
+.btn, button.btn, input[type="submit"], a.btn, .action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
-  color: #ffffff !important;
-  font-weight: 700;
-  font-size: 0.95rem;
+  min-height: 44px;
   padding: 12px 24px;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 0.98rem;
   text-decoration: none;
-  cursor: pointer;
-  overflow: hidden;
-  z-index: 1;
-  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  border: none;
+  transition: filter 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.1s ease !important;
 }
 
-/* Shimmer Light Sweep Effect */
-.btn::before, button::before, input[type="submit"]::before, a.btn::before, .action-btn::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 60%;
-  height: 200%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.4) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  transform: rotate(25deg) translateX(-150%);
-  transition: none;
-  pointer-events: none;
-  z-index: 2;
+.btn:hover, button.btn:hover, input[type="submit"]:hover, a.btn:hover, .action-btn:hover {
+  filter: brightness(1.12) !important;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45) !important;
 }
 
-.btn:hover::before, button:hover::before, input[type="submit"]:hover::before, a.btn:hover::before, .action-btn:hover::before {
-  animation: shimmerSweep 1.2s ease-in-out infinite;
+.btn:active, button.btn:active, input[type="submit"]:active, a.btn:active, .action-btn:active, [role="button"]:active {
+  transform: scale(0.97) !important;
 }
 
-/* 3D Lift, Neon Aura Glow & Zoom on Hover */
-.btn:hover, button:hover, input[type="submit"]:hover, a.btn:hover, .action-btn:hover {
-  transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 12px 35px rgba(99, 102, 241, 0.7), 0 0 25px rgba(139, 92, 246, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: #ffffff !important;
+/* Form Input Interactive Focus Glow */
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], 
+input[type="search"], textarea, select, .input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(11, 15, 25, 0.85);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
 }
 
-/* Tactile 3D Press Down Effect on Click */
-.btn:active, button:active, input[type="submit"]:active, a.btn:active, .action-btn:active {
-  transform: translateY(1px) scale(0.97);
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
+input:focus, textarea:focus, select:focus, .input:focus {
+  outline: none !important;
+  border-color: var(--primary-indigo) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3) !important;
 }
 
-/* Icon Animation on Button Hover */
-.btn i, button i, a.btn i, .action-btn i {
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+/* --- 8. Table Dynamic Data Grid (Dark-Mode Modern Fintech) --- */
+table, .table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  font-variant-numeric: tabular-nums;
 }
 
-.btn:hover i, button:hover i, a.btn:hover i, .action-btn:hover i {
-  transform: translateX(4px) scale(1.15);
+th, .table th {
+  background: #0b0f19 !important;
+  color: var(--text-muted) !important;
+  font-size: 0.72rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  font-weight: 800 !important;
+  padding: 14px 16px !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08) !important;
+  text-align: left;
 }
 
-/* Secondary & Color Button Variants */
-.btn-success, .btn-green {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4) !important;
-}
-.btn-success:hover, .btn-green:hover {
-  box-shadow: 0 10px 35px rgba(16, 185, 129, 0.7), 0 0 25px rgba(52, 211, 153, 0.5) !important;
+td, .table td {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: #cbd5e1;
+  font-size: 0.92rem;
 }
 
-.btn-secondary, .btn-outline {
-  background: rgba(30, 41, 59, 0.7) !important;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
-}
-.btn-secondary:hover, .btn-outline:hover {
-  background: rgba(99, 102, 241, 0.25) !important;
-  border-color: rgba(99, 102, 241, 0.6) !important;
-  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4) !important;
+table tbody tr, .table tbody tr {
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.btn-danger, .btn-red {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4) !important;
-}
-.btn-danger:hover, .btn-red:hover {
-  box-shadow: 0 10px 35px rgba(239, 68, 68, 0.7), 0 0 25px rgba(248, 113, 113, 0.5) !important;
+table tbody tr:hover td, .table tbody tr:hover td {
+  background-color: rgba(99, 102, 241, 0.08) !important;
 }
 
-/* Floating Action Button (FAB) & Special Triggers */
-.fab-float, .chatbot-trigger, .voice-fab {
-  animation: dribbbleFloat 4s ease-in-out infinite;
-  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6), 0 0 20px rgba(139, 92, 246, 0.4);
+table tbody tr:hover, .table tbody tr:hover {
+  box-shadow: inset 3px 0 0 var(--primary-indigo) !important;
 }
 
-/* 3D Dynamic Card Elevation & Micro-Interactions */
-.card, .grid > div, .pkg-card, .stat-card, .admin-card {
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.card:hover, .grid > div:hover, .pkg-card:hover, .stat-card:hover, .admin-card:hover {
-  transform: translateY(-6px) scale(1.01);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.25);
-  border-color: rgba(99, 102, 241, 0.5) !important;
-}
-
-/* Glowing Form Controls */
-input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea {
-  transition: all 0.3s ease;
-}
-input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
-  border-color: #6366f1 !important;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25), 0 0 20px rgba(99, 102, 241, 0.2) !important;
-  outline: none;
+/* Universal Table Horizontal Scroll Auto-Containment */
+.table-responsive, .table-container, .table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(11, 15, 25, 0.5);
 }
 
-
-/* =========================================================
-   Dribbble 3D Ambient Orbs, Bento Matte & Dynamic Micro-Interactions
-   ========================================================= */
-
-/* Ambient Glowing Background Orbs */
-.ambient-orb-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
+/* --- 9. Complete Universal Responsive Matrix (320px to 4K) --- */
+/* Global Fluid Scaling & Anti-Overflow Protection */
+html, body {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  -webkit-text-size-adjust: 100%;
 }
 
-.ambient-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.25;
-  animation: orbFloat 15s ease-in-out infinite alternate;
+*, *::before, *::after {
+  box-sizing: border-box !important;
 }
 
-.orb-1 {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, #6366f1, #4f46e5);
-  top: -100px;
-  left: -100px;
+/* Fluid Media - Never Exceed Container */
+img, video, iframe, canvas, svg, embed, object {
+  max-width: 100% !important;
+  height: auto;
+  box-sizing: border-box;
 }
 
-.orb-2 {
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, #8b5cf6, #ec4899);
-  bottom: -150px;
-  right: -150px;
-  animation-delay: -5s;
+/* Zero Text Overlap & Safe Wrapping */
+h1, h2, h3, h4, h5, h6, p, a, span, label, td, th, li {
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
 }
 
-.orb-3 {
-  width: 450px;
-  height: 450px;
-  background: radial-gradient(circle, #06b6d4, #10b981);
-  top: 40%;
-  left: 30%;
-  animation-delay: -10s;
+/* Tablet & iPad Landscape (<= 1024px) */
+@media (max-width: 1024px) {
+  .grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .dashboard-grid { grid-template-columns: 1fr !important; }
 }
 
-@keyframes orbFloat {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(60px, 80px) scale(1.1); }
-  100% { transform: translate(-40px, 50px) scale(0.95); }
-}
+/* Tablets & Mobile Devices (<= 768px) */
+@media (max-width: 768px) {
+  .container, .wrap, .main-content, .dashboard-container, .paybill-page {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 
-/* Button Ripple Click Animation */
-.dribbble-ripple {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.45);
-  transform: scale(0);
-  animation: rippleAnimation 0.6s linear;
-  pointer-events: none;
-}
+  /* Automatically collapse all multi-column grids to fluid 1fr cards */
+  .grid, .grid-2, .grid-3, .grid-4, .dashboard-grid, .packages-grid, .cards-grid,
+  .stats-grid, .footer-grid, [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
 
-@keyframes rippleAnimation {
-  to {
-    transform: scale(4);
-    opacity: 0;
+  /* Form columns collapse cleanly */
+  form [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Prevent iOS Safari Forced Auto-Zoom (Font size >= 16px) */
+  input[type="text"], input[type="email"], input[type="password"], 
+  input[type="number"], input[type="search"], input[type="tel"], 
+  textarea, select, .input {
+    font-size: 16px !important;
+    min-height: 48px !important;
+  }
+
+  /* Touch-Friendly Target Sizes (>= 48px) */
+  button, .btn, a.btn, input[type="submit"], input[type="button"], select,
+  .site-header nav a, .mobile-nav-toggle, #siteThemeToggleBtn, #mknetAssistantToggle {
+    min-height: 48px !important;
+  }
+
+  /* Mobile Responsive Tables (Zero Horizontal Body Scroll) */
+  table, .table {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+  }
+
+  /* Lighten GPU Blur Overhead on Mobile */
+  .card, .glass-card, .pkg-card, .stat-card {
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+
+  .modal-content {
+    width: 95% !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    padding: 16px !important;
   }
 }
 
-/* Bento Matte 3D Glass Cards */
-.bento-box {
-  background: rgba(15, 23, 42, 0.75) !important;
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 24px !important;
-  padding: 28px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+/* Compact Mobile Screens (<= 480px) */
+@media (max-width: 480px) {
+  .container, .wrap, .main-content, .dashboard-container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Hero Section Fluid Adaptation */
+  .hero-3d-wrapper {
+    padding: clamp(36px, 8vw, 60px) clamp(12px, 4vw, 20px) !important;
+    margin-bottom: 24px !important;
+  }
+
+  /* Full-Width Touch Buttons for Primary Actions */
+  .hero-3d-wrapper .btn, form .btn:not(.btn-inline):not(.btn-sm), 
+  .btn-block, .pkg-card .btn, .card > .btn {
+    width: 100% !important;
+  }
+
+  .stat-card, .admin-card, .bento-box, .card {
+    padding: 16px 14px !important;
+  }
+
+  .status-pill {
+    padding: 4px 10px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Responsive Voice Assistant Panel on Mobile */
+  #mknetAssistant {
+    bottom: 14px !important;
+    right: 14px !important;
+  }
+  #mknetAssistantToggle {
+    width: 54px !important;
+    height: 54px !important;
+    font-size: 20px !important;
+  }
+  #mknetAssistantPanel {
+    position: fixed !important;
+    bottom: 78px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: 72vh !important;
+  }
 }
 
-.bento-box::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.8), rgba(168, 85, 247, 0.8), transparent);
+/* Ultra-Compact Screens (<= 360px - iPhone SE 1st Gen & Narrow Androids) */
+@media (max-width: 360px) {
+  h1, .h1 { font-size: 1.65rem !important; }
+  h2, .h2 { font-size: 1.3rem !important; }
+  h3, .h3 { font-size: 1.1rem !important; }
+  .btn, a.btn { padding: 10px 14px !important; font-size: 0.9rem !important; }
 }
 
-/* Dynamic Interactive Icons */
-.i-bounce:hover {
-  animation: iconBounce 0.5s ease-in-out;
+/* --- 10. Reduced Motion Support/* --- 10. Reduced Motion Support for Accessibility --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
-
-@keyframes iconBounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px) scale(1.15); }
-}
-
 
 /* MKNET RESPONSIVE FOUNDATION — 2026-11 */
 /* Mobile-first responsive layer shared by public pages and customer portal. */
