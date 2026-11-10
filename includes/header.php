@@ -222,8 +222,9 @@ body {
 
 /* Global Responsive Fixes */
 html, body {
-  max-width: 100vw;
-  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip !important;
 }
 
 img, video, iframe, canvas {
