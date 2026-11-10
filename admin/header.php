@@ -13,7 +13,7 @@ $adminName = $_SESSION['admin_name'] ?? $_SESSION['admin_user'] ?? 'Admin';
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MK Net ISP — Admin Panel Control Center</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/admin/style.css">
+  <link rel="stylesheet" href="/admin/style.css?v=20261110-responsive-01">
   <style>
     /* Responsive layout fallback */
     body { margin: 0; background: #090d16; color: #f8fafc; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; display: flex; min-height: 100vh; }
@@ -32,12 +32,13 @@ $adminName = $_SESSION['admin_name'] ?? $_SESSION['admin_user'] ?? 'Admin';
 <div class="admin-layout">
 
 <?php include __DIR__ . '/sidebar.php'; ?>
+  <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Close navigation" tabindex="-1"></button>
 
 <div class="admin-main-wrapper">
   <!-- Top Navigation Header -->
   <header class="top-navbar">
     <div style="display: flex; align-items: center; gap: 16px;">
-      <button id="menuBtn" style="background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); color: #a5b4fc; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+      <button id="menuBtn" type="button" aria-controls="mknetAdminSidebar" aria-expanded="false" style="background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); color: #a5b4fc; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
         <i class="fa-solid fa-bars"></i> Menu
       </button>
       <h2 style="margin: 0; font-size: 1.2rem; color: #fff; font-weight: 800;">MK Net ISP Admin Engine</h2>
@@ -69,9 +70,31 @@ $adminName = $_SESSION['admin_name'] ?? $_SESSION['admin_user'] ?? 'Admin';
   var menuBtn = document.getElementById('menuBtn');
   var sidebar = document.querySelector('.sidebar');
 
+  var backdrop = document.getElementById('sidebarBackdrop');
+  function setSidebarOpen(open) {
+    if (!sidebar) return;
+    sidebar.classList.toggle('active', open);
+    document.body.classList.toggle('sidebar-open', open && window.matchMedia('(max-width: 992px)').matches);
+    if (menuBtn) menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
   if (menuBtn && sidebar) {
     menuBtn.addEventListener('click', function() {
-      sidebar.classList.toggle('active');
+      setSidebarOpen(!sidebar.classList.contains('active'));
+    });
+    if (backdrop) backdrop.addEventListener('click', function() { setSidebarOpen(false); });
+    sidebar.addEventListener('click', function(event) {
+      if (event.target.closest('a')) setSidebarOpen(false);
+    });
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    });
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 992) {
+        sidebar.classList.remove('active');
+        document.body.classList.remove('sidebar-open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+      }
     });
   }
 
