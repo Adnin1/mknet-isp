@@ -735,3 +735,96 @@ input[type="submit"]::before {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* MKNET VISUAL REFINEMENT — restrained, readable, brand-led UI */
+:root {
+  --bg-deep: #0b1220;
+  --bg-card: #111c2c;
+  --bg-card-hover: #162338;
+  --border-subtle: #26364b;
+  --border-glow: rgba(59, 130, 246, .34);
+  --primary-indigo: #3b82f6;
+  --primary-purple: #64748b;
+  --cyber-cyan: #0ea5e9;
+  --text-main: #e8eef6;
+  --text-muted: #a8b5c7;
+  --text-dim: #78889d;
+  --shadow-subtle: 0 4px 16px rgba(0, 0, 0, .18);
+  --shadow-elevated: 0 12px 28px rgba(0, 0, 0, .24);
+  --shadow-glow: none;
+}
+body::before {
+  background-image:
+    radial-gradient(rgba(148, 163, 184, .035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(59, 130, 246, .025), transparent 62%);
+  will-change: auto;
+}
+.card, .glass-card, .pkg-card, .stat-card, .admin-card, .bento-box,
+.feature-card, .plan-card, .dashboard-grid > div {
+  background: #111c2c !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #26364b !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18) !important;
+  transition: border-color .18s ease, background-color .18s ease,
+              box-shadow .18s ease !important;
+  will-change: auto !important;
+}
+.card:hover, .glass-card:hover, .pkg-card:hover, .stat-card:hover,
+.admin-card:hover, .bento-box:hover, .feature-card:hover, .plan-card:hover,
+.dashboard-grid > div:hover {
+  transform: none !important;
+  background: #162338 !important;
+  border-color: rgba(96, 165, 250, .42) !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .22) !important;
+}
+.btn, button.btn, input[type="submit"], a.btn, .action-btn {
+  box-shadow: 0 2px 8px rgba(37, 99, 235, .18);
+  transition: background-color .18s ease, border-color .18s ease,
+              color .18s ease, box-shadow .18s ease, filter .18s ease !important;
+}
+.btn:hover, button.btn:hover, input[type="submit"]:hover,
+a.btn:hover, .action-btn:hover {
+  filter: brightness(1.05) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, .24) !important;
+  transform: none !important;
+}
+.btn::before, button.btn::before, input[type="submit"]::before,
+a.btn::before, .action-btn::before {
+  animation: none !important;
+  opacity: 0 !important;
+}
+.status-pill:hover, .badge:hover { transform: none !important; }
+.float-badge, .floating-icon, .hero-icon-float, .icon-pill, .badge-float,
+.stat-card i.fa-solid:first-child, .bento-box i.fa-solid:first-child,
+.admin-card i.fa-solid:first-child, .feature-card i.fa-solid:first-child,
+.card i.fa-solid:first-child, .icon-floating, .badge-secondary,
+.chip-floating, .plan-badge-float {
+  animation: none !important;
+  will-change: auto !important;
+}
+.fab-float, .chatbot-trigger, .voice-fab {
+  animation: none !important;
+}
+.progress-bar, .meter-bar, .stat-bar-fill, .bandwidth-meter,
+.bar-fill, .progress > div, .quota-meter-fill, .quota-bar {
+  animation: none !important;
+  box-shadow: none !important;
+  transition: width .28s ease, background-color .18s ease !important;
+}
+table tbody tr:hover td, .table tbody tr:hover td {
+  background-color: rgba(59, 130, 246, .055) !important;
+}
+:focus-visible {
+  outline: 3px solid rgba(96, 165, 250, .78) !important;
+  outline-offset: 2px !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}
