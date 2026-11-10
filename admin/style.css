@@ -592,7 +592,7 @@ input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focu
 html, body {
   width: 100%;
   max-width: 100%;
-  overflow-x: clip;
+  overflow-x: clip !important;
 }
 *, *::before, *::after { box-sizing: border-box; }
 .admin-layout {
@@ -675,6 +675,8 @@ h1, h2, h3, p, td, th, label, .card { overflow-wrap: anywhere; }
   scrollbar-width: thin;
 }
 .table-responsive > table, .table-scroll > table, [data-table-scroll] > table {
+  display: table !important;
+  overflow: visible !important;
   width: max-content;
   min-width: 100%;
   max-width: none;
