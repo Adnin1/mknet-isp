@@ -1,4 +1,4 @@
-<div class="sidebar">
+<aside class="sidebar" id="mknetAdminSidebar" aria-label="Admin navigation">
   <h2><span>MK</span> Admin Panel</h2>
   
   <ul class="menu">
@@ -35,4 +35,4 @@
       <a href="logout.php" style="color: #fca5a5;"><i class="fa-solid fa-right-from-bracket"></i> Admin Logout</a>
     </li>
   </ul>
-</div>
+</aside>

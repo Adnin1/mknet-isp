@@ -90,7 +90,7 @@ body {
   background: rgba(99, 102, 241, 0.25) !important;
   color: #a5b4fc !important;
   border: 1px solid rgba(99, 102, 241, 0.4) !important;
-  transform: translateX(4px);
+  transform: none !important;
 }
 
 /* Main Layout */
@@ -220,7 +220,7 @@ tr:hover td {
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
+  transform: none !important;
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
 }
 
@@ -241,11 +241,17 @@ html, body {
   overflow-x: hidden !important;
 }
 
-.table-responsive, table {
+.table-responsive {
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
   display: block;
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  display: table !important;
 }
 
 @media (max-width: 992px) {
@@ -358,7 +364,7 @@ body.light-mode input, body.light-mode select, body.light-mode textarea {
 }
 
 /* Master Animated Dribbble Button System */
-.btn, button, input[type="submit"], input[type="button"], a.btn, .action-btn {
+.btn, button.btn, input[type="submit"], a.btn, .action-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -380,7 +386,7 @@ body.light-mode input, body.light-mode select, body.light-mode textarea {
 }
 
 /* Shimmer Light Sweep Effect */
-.btn::before, button::before, input[type="submit"]::before, a.btn::before, .action-btn::before {
+.btn::before, button.btn::before, input[type="submit"]::before, a.btn::before, .action-btn::before {
   content: "";
   position: absolute;
   top: -50%;
@@ -404,16 +410,16 @@ body.light-mode input, body.light-mode select, body.light-mode textarea {
 }
 
 /* 3D Lift, Neon Aura Glow & Zoom on Hover */
-.btn:hover, button:hover, input[type="submit"]:hover, a.btn:hover, .action-btn:hover {
-  transform: translateY(-4px) scale(1.03);
+.btn:hover, button.btn:hover, input[type="submit"]:hover, a.btn:hover, .action-btn:hover {
+  transform: none !important; filter: brightness(1.08);
   box-shadow: 0 12px 35px rgba(99, 102, 241, 0.7), 0 0 25px rgba(139, 92, 246, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.5);
   color: #ffffff !important;
 }
 
 /* Tactile 3D Press Down Effect on Click */
-.btn:active, button:active, input[type="submit"]:active, a.btn:active, .action-btn:active {
-  transform: translateY(1px) scale(0.97);
+.btn:active, button.btn:active, input[type="submit"]:active, a.btn:active, .action-btn:active {
+  transform: scale(0.98) !important;
   box-shadow: 0 2px 10px rgba(99, 102, 241, 0.5);
 }
 
@@ -423,7 +429,7 @@ body.light-mode input, body.light-mode select, body.light-mode textarea {
 }
 
 .btn:hover i, button:hover i, a.btn:hover i, .action-btn:hover i {
-  transform: translateX(4px) scale(1.15);
+  transform: none !important;
 }
 
 /* Secondary & Color Button Variants */
@@ -466,7 +472,7 @@ body.light-mode input, body.light-mode select, body.light-mode textarea {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .card:hover, .grid > div:hover, .pkg-card:hover, .stat-card:hover, .admin-card:hover {
-  transform: translateY(-6px) scale(1.01);
+  transform: none !important;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.25);
   border-color: rgba(99, 102, 241, 0.5) !important;
 }
@@ -583,5 +589,683 @@ input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focu
 
 @keyframes iconBounce {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px) scale(1.15); }
+  50% { transform: none; opacity: 0.85; }
+}
+
+
+/* ==========================================================================
+   MASTER RESPONSIVE & MOBILE TOUCH OPTIMIZATION SUITE (ADMIN V5.0 PRO)
+   ========================================================================== */
+
+/* Universal Responsive Buttons */
+.btn, button.btn, input[type="submit"], a.btn, .action-btn {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  box-sizing: border-box;
+}
+
+.btn-block, .btn-full {
+  width: 100% !important;
+  display: flex !important;
+}
+
+button {
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* Tablet & Mobile Breakpoints */
+@media (max-width: 1024px) {
+  .hero-box, .bento-box {
+    padding: 24px 18px !important;
+  }
+  .pkg-grid, .grid-3, .grid-4, .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .btn, button.btn, input[type="submit"], a.btn {
+    min-height: 40px;
+  }
+  
+  .table-responsive {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+  }
+  
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    font-size: 16px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: clamp(1.5rem, 5vw, 1.9rem) !important; }
+  h2 { font-size: clamp(1.25rem, 4.5vw, 1.6rem) !important; }
+  h3 { font-size: clamp(1.1rem, 4vw, 1.3rem) !important; }
+  
+  .btn-block, .btn-full, .form-actions .btn {
+    width: 100% !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+/* =========================================================
+   PIM Integration Dashboard (Dribbble 16471196) Enterprise Suite
+   Dynamic Micro-Transition & Radar Animation Engine
+   Living Radar Points • Flowing Shimmer Bars • Organic Floats
+   ========================================================= */
+
+/* --- 1. Living Radar Pulse Keyframes (Points & Indicators) --- */
+@keyframes radarPulseGreen {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1.18); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes radarPulseYellow {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+  70% { transform: scale(1.18); box-shadow: 0 0 0 7px rgba(245, 158, 11, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+@keyframes radarPulseRed {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1.18); box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Status Pills & Living Status Dots */
+.status-pill, .badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.status-pill.operational, .status-pill.active, .status-pill.paid, .badge-success {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+.status-pill.warning, .status-pill.pending, .badge-warning {
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+.status-pill.danger, .status-pill.unpaid, .status-pill.suspended, .badge-danger {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+.status-dot, .live-dot, .pulse-point, .indicator-dot, .online-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: radarPulseGreen 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  vertical-align: middle;
+}
+
+.status-pill.warning .status-dot, .badge-warning .status-dot {
+  background: #f59e0b;
+  animation: radarPulseYellow 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-pill.danger .status-dot, .badge-danger .status-dot {
+  background: #ef4444;
+  animation: radarPulseRed 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* --- 2. Dynamic Flowing Gradient Shimmer Bars --- */
+@keyframes shimmerFlow {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes barGlowPulse {
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 1; filter: brightness(1.2); }
+}
+
+.progress-bar, .meter-bar, .stat-bar-fill, .bandwidth-meter, .bar-fill, .progress > div {
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 35%, #06b6d4 70%, #6366f1 100%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmerFlow 3.5s linear infinite, barGlowPulse 2.5s ease-in-out infinite !important;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.45) !important;
+}
+
+/* --- 3. Organic Floating Animations --- */
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3.5px); }
+}
+
+.stat-card i.fa-solid:first-child, .admin-card i.fa-solid:first-child, .float-badge {
+  animation: floatGentle 3.6s ease-in-out infinite;
+  display: inline-block;
+  will-change: transform;
+}
+
+/* --- 4. Buttery Micro-Transitions (Cards & Bento Boxes) --- */
+.card, .stat-card, .admin-card, .bento-box, .dashboard-grid > div {
+  transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.26s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: transform, box-shadow;
+}
+
+.card:hover, .stat-card:hover, .admin-card:hover, .bento-box:hover, .dashboard-grid > div:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(99, 102, 241, 0.55) !important;
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.55), 0 0 20px rgba(99, 102, 241, 0.25) !important;
+}
+
+/* Stationary Grid Wrappers */
+.grid, .grid-2, .grid-3, .grid-4, .dashboard-grid {
+  transform: none !important;
+}
+
+/* --- 5. Interactive Cursor & Buttons --- */
+button, a, input[type="submit"], input[type="button"], select, 
+.btn, .chip, .badge, .status-pill, .nav-link, .menu-item, [role="button"], [onclick] {
+  cursor: pointer !important;
+}
+
+.btn, button.btn, input[type="submit"], a.btn, .action-btn, .btn-primary {
+  transition: filter 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.1s ease !important;
+}
+
+.btn:hover, button.btn:hover, input[type="submit"]:hover, a.btn:hover, .action-btn:hover, .btn-primary:hover {
+  filter: brightness(1.12) !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45) !important;
+}
+
+.btn:active, button.btn:active, input[type="submit"]:active, a.btn:active, .action-btn:active {
+  transform: scale(0.97) !important;
+}
+
+/* PIM Dashboard Sidebar (Stationary, Calm, Elegant) */
+.sidebar {
+  background: #0b0f19 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.sidebar ul.menu li a {
+  transform: none !important;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+
+.sidebar ul.menu li a:hover {
+  transform: none !important;
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(99, 102, 241, 0.35) !important;
+}
+
+.sidebar ul.menu li a.active {
+  transform: none !important;
+  background: rgba(99, 102, 241, 0.2) !important;
+  color: #a5b4fc !important;
+  border-left: 3px solid #6366f1 !important;
+}
+
+/* PIM Dashboard Dynamic Clean Tables */
+table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  display: table !important;
+}
+
+table tr, table tr td, table tr th {
+  transform: none !important;
+}
+
+th {
+  background: #0d1322 !important;
+  color: #94a3b8 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+table tbody tr {
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+table tbody tr:hover td {
+  background-color: rgba(99, 102, 241, 0.07) !important;
+}
+
+table tbody tr:hover {
+  box-shadow: inset 3px 0 0 #6366f1 !important;
+}
+
+/* Universal Table Horizontal Scroll Wrapper */
+.table-responsive, .table-container, .table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  margin-bottom: 16px;
+  border-radius: 12px;
+}
+
+@media (max-width: 768px) {
+  table {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Admin Universal Mobile Table & Form Hardening */
+html, body {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 768px) {
+  .top-navbar {
+    height: auto !important;
+    padding: 12px 14px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+  .admin-main-wrapper main {
+    padding: 14px !important;
+  }
+  table, .table {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+  }
+  input[type="text"], input[type="email"], input[type="password"], 
+  input[type="number"], input[type="search"], textarea, select {
+    font-size: 16px !important;
+    min-height: 48px !important;
+  }
+}
+
+/* MKNET RESPONSIVE FOUNDATION — 2026-11 */
+/* Shared responsive foundation for every page using the admin shell. */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip !important;
+}
+*, *::before, *::after { box-sizing: border-box; }
+.admin-layout {
+  width: 100%;
+  min-width: 0;
+}
+.admin-main-wrapper {
+  width: calc(100% - var(--sidebar-width));
+  min-width: 0;
+  flex: 1 1 auto;
+  margin-left: var(--sidebar-width);
+}
+.admin-main-wrapper > main {
+  width: 100%;
+  min-width: 0;
+  padding: clamp(14px, 2.5vw, 28px) !important;
+}
+.admin-container, .main, .main-content, .card, .admin-card,
+.admin-layout > *, .admin-main-wrapper > * {
+  min-width: 0;
+  max-width: 100%;
+}
+img, picture, video, svg, canvas, iframe {
+  max-width: 100%;
+}
+img, picture, video { height: auto; }
+iframe { width: 100%; }
+h1 { font-size: clamp(1.55rem, 3.3vw, 2.3rem); line-height: 1.2; }
+h2 { font-size: clamp(1.25rem, 2.7vw, 1.8rem); line-height: 1.25; }
+h3 { font-size: clamp(1.05rem, 2vw, 1.4rem); line-height: 1.3; }
+h1, h2, h3, p, td, th, label, .card { overflow-wrap: anywhere; }
+
+.top-navbar {
+  min-height: 70px;
+  height: auto;
+  padding: 12px clamp(12px, 2.5vw, 28px);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.top-navbar > div {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.top-navbar h2 { min-width: 0; overflow-wrap: anywhere; }
+.admin-main-wrapper .card {
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-main-wrapper .grid,
+.admin-main-wrapper .dashboard-grid,
+.admin-main-wrapper .stats-grid,
+.admin-main-wrapper .cards-grid,
+.admin-main-wrapper .form-grid,
+.admin-main-wrapper .filter-grid {
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+.admin-main-wrapper .grid > *,
+.admin-main-wrapper .dashboard-grid > *,
+.admin-main-wrapper .stats-grid > *,
+.admin-main-wrapper .cards-grid > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.form-grid, .filter-grid, .form-row, .filter-row {
+  min-width: 0;
+}
+.table-responsive, .table-scroll, [data-table-scroll] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.table-responsive > table, .table-scroll > table, [data-table-scroll] > table {
+  display: table !important;
+  overflow: visible !important;
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+  border-collapse: collapse;
+}
+pre, .code-block {
+  max-width: 100%;
+  overflow: auto;
+}
+input, select, textarea, button {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 16px;
+}
+input, select, textarea { min-height: 44px; }
+button, .btn, a.btn, input[type="submit"], input[type="button"] {
+  min-height: 44px;
+  touch-action: manipulation;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.btn { width: auto; }
+.actions, .form-actions, .button-group, .toolbar, .filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.tabs, .nav-tabs, .tab-list {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tabs > *, .nav-tabs > *, .tab-list > * { flex: 0 0 auto; }
+
+/* Sidebar backdrop is only active on compact viewports. */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(2, 6, 23, .62);
+  z-index: 99;
+  cursor: pointer;
+}
+.sidebar { z-index: 100; }
+.sidebar ul.menu li a {
+  min-height: 44px;
+  transform: none !important;
+}
+.sidebar ul.menu li a:hover,
+.sidebar ul.menu li a.active {
+  transform: none !important;
+}
+.card, .btn, button, input, select, textarea, .sidebar ul.menu li a {
+  transition: border-color .18s ease, background-color .18s ease,
+              box-shadow .18s ease, color .18s ease;
+}
+.card:hover, .admin-card:hover {
+  transform: none !important;
+}
+.btn:hover, button:hover, .sidebar ul.menu li a:hover {
+  transform: none !important;
+}
+:focus-visible {
+  outline: 3px solid rgba(129, 140, 248, .8);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  .admin-main-wrapper { width: calc(100% - var(--sidebar-width)); }
+}
+@media (max-width: 992px) {
+  .admin-main-wrapper {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(86vw, 320px);
+    max-width: 320px;
+    transform: translateX(-105%);
+    transition: transform .22s ease;
+    box-shadow: 18px 0 48px rgba(0,0,0,.36);
+  }
+  .sidebar.active { transform: translateX(0); }
+  body.sidebar-open { overflow: hidden; }
+  body.sidebar-open .sidebar-backdrop { display: block; }
+  .admin-main-wrapper > main { padding: 16px !important; }
+  .top-navbar { position: sticky; top: 0; }
+}
+@media (max-width: 768px) {
+  .admin-main-wrapper .grid, .admin-main-wrapper .dashboard-grid,
+  .admin-main-wrapper .stats-grid, .admin-main-wrapper .cards-grid,
+  .admin-main-wrapper .form-grid, .admin-main-wrapper .filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .card { padding: 16px !important; }
+  .top-navbar { align-items: flex-start; }
+  .top-navbar > div { width: 100%; }
+  .top-navbar h2 { font-size: 1.05rem; }
+  .admin-main-wrapper > main { padding: 14px !important; }
+  .table-responsive > table, .table-scroll > table, [data-table-scroll] > table {
+    min-width: 640px;
+  }
+}
+@media (max-width: 480px) {
+  .admin-main-wrapper > main { padding: 12px !important; }
+  .card { padding: 14px !important; border-radius: 12px; }
+  .top-navbar { padding: 10px 12px; }
+  .top-navbar > div { gap: 8px; }
+  .top-navbar button, .top-navbar a { min-height: 44px; }
+  .actions, .form-actions, .button-group { align-items: stretch; }
+  .actions > .btn, .form-actions > .btn, .button-group > .btn {
+    flex: 1 1 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Ensure the fixed sidebar and content column share the viewport without adding the sidebar width twice. */
+.admin-main-wrapper {
+  width: auto;
+  max-width: calc(100% - var(--sidebar-width));
+  min-width: 0;
+  flex: 1 1 0;
+}
+@media (max-width: 992px) {
+  .admin-main-wrapper {
+    width: 100%;
+    max-width: 100%;
+    flex-basis: auto;
+  }
+}
+
+
+/* MKNET ADMIN VISUAL REFINEMENT — quiet enterprise dashboard */
+:root {
+  --bg-dark: #0b1220;
+  --bg-card: #111c2c;
+  --bg-card-hover: #162338;
+  --border-color: #26364b;
+  --border-glow: rgba(96, 165, 250, .36);
+  --accent-primary: #3b82f6;
+  --accent-secondary: #64748b;
+  --text-main: #e8eef6;
+  --text-muted: #a8b5c7;
+}
+body, .admin-layout, .admin-main-wrapper, .admin-container, .main, .main-content {
+  background-color: #0b1220 !important;
+}
+.sidebar, .top-navbar, .admin-header {
+  background: #101b2b !important;
+  border-color: #26364b !important;
+  box-shadow: none !important;
+}
+.sidebar {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.sidebar ul.menu li a {
+  border: 1px solid transparent;
+  border-radius: 9px !important;
+  transition: background-color .16s ease, color .16s ease,
+              border-color .16s ease !important;
+}
+.sidebar ul.menu li a:hover, .sidebar ul.menu li a.active {
+  background: rgba(59, 130, 246, .12) !important;
+  border-color: rgba(96, 165, 250, .22) !important;
+  color: #bfdbfe !important;
+  transform: none !important;
+}
+.card, .admin-card, .bento-box, .stat-card,
+.dashboard-grid > div {
+  background: #111c2c !important;
+  border: 1px solid #26364b !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition: background-color .18s ease, border-color .18s ease,
+              box-shadow .18s ease !important;
+  will-change: auto !important;
+}
+.card:hover, .admin-card:hover, .bento-box:hover, .stat-card:hover,
+.dashboard-grid > div:hover {
+  transform: none !important;
+  background: #162338 !important;
+  border-color: rgba(96, 165, 250, .36) !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .22) !important;
+}
+.btn, button.btn, input[type="submit"], a.btn, .action-btn {
+  transition: background-color .16s ease, border-color .16s ease,
+              color .16s ease, box-shadow .16s ease, filter .16s ease !important;
+}
+.btn::before, button.btn::before, input[type="submit"]::before,
+a.btn::before, .action-btn::before {
+  animation: none !important;
+  opacity: 0 !important;
+}
+.btn:hover, button.btn:hover, input[type="submit"]:hover,
+a.btn:hover, .action-btn:hover {
+  filter: brightness(1.05);
+  transform: none !important;
+}
+.stat-card i.fa-solid:first-child, .admin-card i.fa-solid:first-child,
+.float-badge {
+  animation: none !important;
+  will-change: auto !important;
+}
+.progress-bar, .meter-bar, .stat-bar-fill, .bandwidth-meter, .bar-fill,
+.progress > div {
+  animation: none !important;
+  box-shadow: none !important;
+  transition: width .28s ease !important;
+}
+table tbody tr:hover td {
+  background: rgba(59, 130, 246, .055) !important;
+}
+:focus-visible {
+  outline: 3px solid rgba(96, 165, 250, .78) !important;
+  outline-offset: 2px !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
 }

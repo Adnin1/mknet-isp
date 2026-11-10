@@ -20,7 +20,7 @@
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<link rel="stylesheet" href="/assets/style.css">
+<link rel="stylesheet" href="/assets/style.css?v=20261110-responsive-01">
 
 <script>
 if ('serviceWorker' in navigator) {
@@ -222,8 +222,9 @@ body {
 
 /* Global Responsive Fixes */
 html, body {
-  max-width: 100vw;
-  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip !important;
 }
 
 img, video, iframe, canvas {
@@ -255,6 +256,21 @@ img, video, iframe, canvas {
   }
 }
 </style>
+
+<style>
+@media (max-width: 992px) {
+  .site-header > div { width: 100%; padding-inline: 12px; }
+  #siteHeaderNav { display: none; width: 100%; max-height: min(72dvh, 620px); overflow-y: auto; }
+  #siteHeaderNav.mobile-open { display: block !important; }
+  #siteHeaderNav > ul { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+  #siteHeaderNav > ul > li { width: 100%; min-width: 0; }
+  #siteHeaderNav a, #siteHeaderNav button { width: 100%; min-height: 46px; justify-content: flex-start; }
+  #siteHeaderNav .dropdown-content { position: static !important; width: 100%; }
+}
+@media (min-width: 993px) {
+  #siteHeaderNav { display: block !important; }
+}
+</style>
 </head>
 <body>
 
@@ -282,12 +298,12 @@ try {
     </a>
 
     <!-- Mobile Menu Hamburger Button -->
-    <button type="button" class="mobile-nav-toggle" id="mobileNavToggleBtn" aria-label="Toggle Navigation Menu">
+    <button type="button" class="mobile-nav-toggle" id="mobileNavToggleBtn" aria-label="Open navigation" aria-controls="siteHeaderNav" aria-expanded="false">
       <i class="fa-solid fa-bars"></i>
     </button>
 
     <!-- Navigation -->
-    <nav id="siteHeaderNav">
+    <nav id="siteHeaderNav" aria-label="Primary navigation">
       <ul>
         <li><a href="/index.php"><i class="fa-solid fa-house"></i> Home</a></li>
         <li><a href="/pages/ai_experience.php" style="background: rgba(236,72,153,0.15); border: 1px solid rgba(236,72,153,0.4); color: #f472b6; font-weight: 800;"><i class="fa-solid fa-brain"></i> AI Experience Hub</a></li>
@@ -330,18 +346,47 @@ document.addEventListener('DOMContentLoaded', function() {
   var mobileBtn = document.getElementById('mobileNavToggleBtn');
   var headerNav = document.getElementById('siteHeaderNav');
   if (mobileBtn && headerNav) {
-    mobileBtn.addEventListener('click', function() {
-      headerNav.classList.toggle('mobile-open');
+    function setMenuOpen(open) {
+      headerNav.classList.toggle('mobile-open', open);
+      mobileBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      mobileBtn.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
       var icon = mobileBtn.querySelector('i');
-      if (icon) {
-        if (headerNav.classList.contains('mobile-open')) {
-          icon.className = 'fa-solid fa-xmark';
-        } else {
-          icon.className = 'fa-solid fa-bars';
-        }
+      if (icon) icon.className = open ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+    }
+    mobileBtn.addEventListener('click', function() {
+      setMenuOpen(!headerNav.classList.contains('mobile-open'));
+    });
+    headerNav.addEventListener('click', function(event) {
+      var link = event.target.closest('a');
+      if (!link || !window.matchMedia('(max-width: 992px)').matches) return;
+      var href = (link.getAttribute('href') || '').trim().toLowerCase();
+      if (href && !href.startsWith('javascript:')) setMenuOpen(false);
+    });
+    document.addEventListener('click', function(event) {
+      if (headerNav.classList.contains('mobile-open') &&
+          !headerNav.contains(event.target) && !mobileBtn.contains(event.target)) {
+        setMenuOpen(false);
       }
     });
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') setMenuOpen(false);
+    });
+    window.addEventListener('resize', function() {
+      if (window.innerWidth > 992) setMenuOpen(false);
+    });
   }
+
+  /* Give wide data tables a contained touch-scroll region without changing cells. */
+  document.querySelectorAll('table').forEach(function(table) {
+    if (table.closest('.table-responsive, .table-scroll, [data-table-scroll]')) return;
+    var wrapper = document.createElement('div');
+    wrapper.className = 'table-responsive';
+    wrapper.setAttribute('role', 'region');
+    wrapper.setAttribute('aria-label', 'Scrollable table');
+    wrapper.setAttribute('tabindex', '0');
+    table.parentNode.insertBefore(wrapper, table);
+    wrapper.appendChild(table);
+  });
 });
 </script>
 

@@ -38,7 +38,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
   }
 }
 ?>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261110-responsive-01">
 
 <div class="main" style="max-width:400px; margin:auto; margin-top:100px;">
   <div class="card">
