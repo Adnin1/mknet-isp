@@ -585,3 +585,230 @@ input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focu
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px) scale(1.15); }
 }
+
+
+/* MKNET RESPONSIVE FOUNDATION — 2026-11 */
+/* Shared responsive foundation for every page using the admin shell. */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+*, *::before, *::after { box-sizing: border-box; }
+.admin-layout {
+  width: 100%;
+  min-width: 0;
+}
+.admin-main-wrapper {
+  width: calc(100% - var(--sidebar-width));
+  min-width: 0;
+  flex: 1 1 auto;
+  margin-left: var(--sidebar-width);
+}
+.admin-main-wrapper > main {
+  width: 100%;
+  min-width: 0;
+  padding: clamp(14px, 2.5vw, 28px) !important;
+}
+.admin-container, .main, .main-content, .card, .admin-card,
+.admin-layout > *, .admin-main-wrapper > * {
+  min-width: 0;
+  max-width: 100%;
+}
+img, picture, video, svg, canvas, iframe {
+  max-width: 100%;
+}
+img, picture, video { height: auto; }
+iframe { width: 100%; }
+h1 { font-size: clamp(1.55rem, 3.3vw, 2.3rem); line-height: 1.2; }
+h2 { font-size: clamp(1.25rem, 2.7vw, 1.8rem); line-height: 1.25; }
+h3 { font-size: clamp(1.05rem, 2vw, 1.4rem); line-height: 1.3; }
+h1, h2, h3, p, td, th, label, .card { overflow-wrap: anywhere; }
+
+.top-navbar {
+  min-height: 70px;
+  height: auto;
+  padding: 12px clamp(12px, 2.5vw, 28px);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.top-navbar > div {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.top-navbar h2 { min-width: 0; overflow-wrap: anywhere; }
+.admin-main-wrapper .card {
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-main-wrapper .grid,
+.admin-main-wrapper .dashboard-grid,
+.admin-main-wrapper .stats-grid,
+.admin-main-wrapper .cards-grid,
+.admin-main-wrapper .form-grid,
+.admin-main-wrapper .filter-grid {
+  min-width: 0;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+}
+.admin-main-wrapper .grid > *,
+.admin-main-wrapper .dashboard-grid > *,
+.admin-main-wrapper .stats-grid > *,
+.admin-main-wrapper .cards-grid > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.form-grid, .filter-grid, .form-row, .filter-row {
+  min-width: 0;
+}
+.table-responsive, .table-scroll, [data-table-scroll] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.table-responsive > table, .table-scroll > table, [data-table-scroll] > table {
+  width: max-content;
+  min-width: 100%;
+  max-width: none;
+  border-collapse: collapse;
+}
+pre, .code-block {
+  max-width: 100%;
+  overflow: auto;
+}
+input, select, textarea, button {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 16px;
+}
+input, select, textarea { min-height: 44px; }
+button, .btn, a.btn, input[type="submit"], input[type="button"] {
+  min-height: 44px;
+  touch-action: manipulation;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.btn { width: auto; }
+.actions, .form-actions, .button-group, .toolbar, .filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.tabs, .nav-tabs, .tab-list {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tabs > *, .nav-tabs > *, .tab-list > * { flex: 0 0 auto; }
+
+/* Sidebar backdrop is only active on compact viewports. */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(2, 6, 23, .62);
+  z-index: 99;
+  cursor: pointer;
+}
+.sidebar { z-index: 100; }
+.sidebar ul.menu li a {
+  min-height: 44px;
+  transform: none !important;
+}
+.sidebar ul.menu li a:hover,
+.sidebar ul.menu li a.active {
+  transform: none !important;
+}
+.card, .btn, button, input, select, textarea, .sidebar ul.menu li a {
+  transition: border-color .18s ease, background-color .18s ease,
+              box-shadow .18s ease, color .18s ease;
+}
+.card:hover, .admin-card:hover {
+  transform: none !important;
+}
+.btn:hover, button:hover, .sidebar ul.menu li a:hover {
+  transform: none !important;
+}
+:focus-visible {
+  outline: 3px solid rgba(129, 140, 248, .8);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  .admin-main-wrapper { width: calc(100% - var(--sidebar-width)); }
+}
+@media (max-width: 992px) {
+  .admin-main-wrapper {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(86vw, 320px);
+    max-width: 320px;
+    transform: translateX(-105%);
+    transition: transform .22s ease;
+    box-shadow: 18px 0 48px rgba(0,0,0,.36);
+  }
+  .sidebar.active { transform: translateX(0); }
+  body.sidebar-open { overflow: hidden; }
+  body.sidebar-open .sidebar-backdrop { display: block; }
+  .admin-main-wrapper > main { padding: 16px !important; }
+  .top-navbar { position: sticky; top: 0; }
+}
+@media (max-width: 768px) {
+  .admin-main-wrapper .grid, .admin-main-wrapper .dashboard-grid,
+  .admin-main-wrapper .stats-grid, .admin-main-wrapper .cards-grid,
+  .admin-main-wrapper .form-grid, .admin-main-wrapper .filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .card { padding: 16px !important; }
+  .top-navbar { align-items: flex-start; }
+  .top-navbar > div { width: 100%; }
+  .top-navbar h2 { font-size: 1.05rem; }
+  .admin-main-wrapper > main { padding: 14px !important; }
+  .table-responsive > table, .table-scroll > table, [data-table-scroll] > table {
+    min-width: 640px;
+  }
+}
+@media (max-width: 480px) {
+  .admin-main-wrapper > main { padding: 12px !important; }
+  .card { padding: 14px !important; border-radius: 12px; }
+  .top-navbar { padding: 10px 12px; }
+  .top-navbar > div { gap: 8px; }
+  .top-navbar button, .top-navbar a { min-height: 44px; }
+  .actions, .form-actions, .button-group { align-items: stretch; }
+  .actions > .btn, .form-actions > .btn, .button-group > .btn {
+    flex: 1 1 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
