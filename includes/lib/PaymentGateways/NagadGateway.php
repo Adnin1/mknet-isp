@@ -58,10 +58,13 @@ class NagadGateway implements GatewayInterface
     public function initiate(array $transaction): array
     {
         if (!$this->isConfigured()) {
-            return [
-                'mode' => 'simulate',
-                'url' => "/pages/payment_callback.php?invoice_id=" . urlencode((string)$transaction['invoice_id']) . '&status=success&gateway=nagad_sim',
-            ];
+            if (function_exists('mknet_is_local_simulation_request') && mknet_is_local_simulation_request()) {
+                return [
+                    'mode' => 'simulate',
+                    'url' => "/pages/payment_callback.php?invoice_id=" . urlencode((string)$transaction['invoice_id']) . '&status=success&gateway=nagad_sim',
+                ];
+            }
+            throw new RuntimeException('Nagad is not configured for live payments.');
         }
 
         $orderId = 'INV' . $transaction['invoice_id'] . '-' . time();
@@ -104,12 +107,18 @@ class NagadGateway implements GatewayInterface
     public function handleCallback(array $requestData): array
     {
         if (($requestData['gateway'] ?? '') === 'nagad_sim') {
+            if (!function_exists('mknet_is_local_simulation_request') || !mknet_is_local_simulation_request()) {
+                return ['success' => false, 'gateway_txn_id' => null, 'raw' => ['reason' => 'SIMULATION_DISABLED']];
+            }
             return ['success' => ($requestData['status'] ?? '') === 'success', 'gateway_txn_id' => 'SIM-' . time(), 'raw' => $requestData];
         }
 
-        // Nagad redirects back with payment_ref_id & status in the query string.
-        $status = $requestData['status'] ?? '';
-        $success = strtoupper($status) === 'SUCCESS';
-        return ['success' => $success, 'gateway_txn_id' => $requestData['payment_ref_id'] ?? null, 'raw' => $requestData];
+        // Fail closed: this adapter currently has no verified Nagad response-signature
+        // validation. A status query parameter alone is not proof of payment.
+        return [
+            'success' => false,
+            'gateway_txn_id' => $requestData['payment_ref_id'] ?? null,
+            'raw' => ['reason' => 'NAGAD_CALLBACK_SIGNATURE_VALIDATION_NOT_IMPLEMENTED'],
+        ];
     }
 }
