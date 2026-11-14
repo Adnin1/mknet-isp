@@ -1,0 +1,72 @@
+name: MK Net PHP Security CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  php-lint:
+    name: PHP syntax and secret-config guard
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: curl, json, openssl, pdo, pdo_mysql, pdo_sqlite
+          coverage: none
+
+      - name: Lint every tracked PHP file
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' file; do
+            php -l "$file" >/dev/null
+            count=$((count + 1))
+          done < <(find . -type f -name '*.php'             -not -path './.git/*'             -not -path './vendor/*'             -not -path './storage/*' -print0)
+          test "$count" -gt 0
+          echo "PHP syntax PASS: $count files"
+
+      - name: Verify private configuration is not tracked
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files --error-unmatch config/database.php >/dev/null 2>&1; then
+            echo "::error::Private database configuration must never be tracked."
+            exit 1
+          fi
+          if git ls-files --error-unmatch config/services.php >/dev/null 2>&1; then
+            echo "::error::Private service credentials must never be tracked."
+            exit 1
+          fi
+          echo "Private configuration tracking guard PASS"
+
+      - name: Python syntax check for local audit helper
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile local audit helper
+        run: python -m py_compile scripts/auto_sync_live.py
+
+  diff-check:
+    name: Patch hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check whitespace errors
+        run: git diff --check ${{ github.event.pull_request.base.sha }}...HEAD
