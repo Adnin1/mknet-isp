@@ -3,6 +3,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+// Simulation callbacks may only run in explicit local debug mode.
+$requestedGateway = (string)($_GET['gateway'] ?? '');
+if (str_ends_with($requestedGateway, '_sim') && !mknet_is_local_simulation_request()) {
+    http_response_code(403);
+    header('Content-Type: text/plain; charset=utf-8');
+    exit('Payment simulation is disabled on this host.');
+}
+
 try {
     $invoiceId = filter_input(INPUT_GET, 'invoice_id', FILTER_VALIDATE_INT);
     if (!$invoiceId) throw new Exception("Missing invoice_id.");
