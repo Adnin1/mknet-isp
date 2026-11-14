@@ -12,3 +12,6 @@ storage/backups/*.sql
 .DS_Store
 Thumbs.db
 *.swp
+
+# Production database credentials
+config/database.php
