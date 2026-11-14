@@ -7,6 +7,17 @@ error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING & ~E_DEPRECATED);
 
 define('APP_DEBUG', false);
 
+if (!function_exists('mknet_is_local_simulation_request')) {
+    function mknet_is_local_simulation_request(): bool {
+        if (!defined('APP_DEBUG') || APP_DEBUG !== true) {
+            return false;
+        }
+        $remoteAddress = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+        return in_array($remoteAddress, ['127.0.0.1', '::1'], true);
+    }
+}
+
+
 // ---------------------------------------------------------------------
 // Session hardening. Must run BEFORE any session_start() call, so this
 // has to stay at the very top of config.php since every page requires
@@ -122,11 +133,9 @@ if (!function_exists('validate_password_strength')) {
     }
 }
 
-$host = '127.0.0.1';
-$db   = 'mknet';
-$user = 'root';
-$pass = '';
-$charset = 'utf8mb4';
+// Database credentials are loaded from the ignored config/database.php file
+// or MKNET_DB_* environment variables. Never commit production credentials.
+$charset = getenv('MKNET_DB_CHARSET') ?: 'utf8mb4';
 
 // ---------------------------------------------------------------------
 // Helper functions (এখানেই একবার থাকবে — অন্য কোনো ফাইলে e()/h() আবার
@@ -211,70 +220,92 @@ $options = [
   PDO::ATTR_TIMEOUT => 2,
 ];
 
-// Smart Multi-Database Engine: Auto-detects Live InfinityFree vs Local Environment
-$isLiveHosting = isset($_SERVER['HTTP_HOST']) && (str_contains($_SERVER['HTTP_HOST'], 'lovestoblog.com') || str_contains($_SERVER['HTTP_HOST'], 'infinityfree'));
+// Explicit environment selection: do not infer production from the client-controlled HTTP Host header.
+$pdo = null;
+$isProduction = strtolower(trim((string)(getenv('MKNET_ENV') ?: ''))) === 'production';
+$databaseConfigFile = __DIR__ . '/config/database.php';
+$dbConfigs = [];
 
-if ($isLiveHosting) {
-    // 1. Live Hosting: Connect to InfinityFree MySQL primary first
-    $dbConfigs = [
-        ['host' => 'sql301.infinityfree.com', 'db' => 'if0_42585245_mknet', 'user' => 'if0_42585245', 'pass' => 'mknet123'],
-        ['host' => '127.0.0.1', 'db' => 'mknet', 'user' => 'root', 'pass' => ''],
-        ['host' => 'localhost', 'db' => 'mknet', 'user' => 'root', 'pass' => ''],
-    ];
-
-    foreach ($dbConfigs as $cfg) {
-        try {
-            $dsn = "mysql:host={$cfg['host']};dbname={$cfg['db']};charset=utf8mb4";
-            $pdo = new PDO($dsn, $cfg['user'], $cfg['pass'], $options);
-            break;
-        } catch (PDOException $ex) {
-            $lastError = $ex->getMessage();
-        }
+if (is_file($databaseConfigFile)) {
+    $loadedDatabaseConfig = require $databaseConfigFile;
+    if (!is_array($loadedDatabaseConfig) || $loadedDatabaseConfig === []) {
+        app_log('db', 'Database configuration file is invalid.');
+        http_response_code(500);
+        die('Database configuration is unavailable.');
+    }
+    $dbConfigs = $loadedDatabaseConfig;
+} else {
+    $envHost = trim((string)(getenv('MKNET_DB_HOST') ?: ''));
+    $envName = trim((string)(getenv('MKNET_DB_NAME') ?: ''));
+    $envUser = trim((string)(getenv('MKNET_DB_USER') ?: ''));
+    $envPass = (string)(getenv('MKNET_DB_PASSWORD') ?: '');
+    if ($envHost !== '' && $envName !== '' && $envUser !== '') {
+        $dbConfigs[] = [
+            'host' => $envHost,
+            'db' => $envName,
+            'user' => $envUser,
+            'pass' => $envPass,
+        ];
+    } elseif (!$isProduction) {
+        // Safe local-development defaults only. Production never falls back to these.
+        $dbConfigs[] = [
+            'host' => '127.0.0.1',
+            'db' => 'mknet',
+            'user' => 'root',
+            'pass' => '',
+        ];
     }
 }
 
-// 2. Try standalone SQLite for instant local speed
-if (!$pdo) {
+if ($isProduction && $dbConfigs === []) {
+    app_log('db', 'Production database credentials are not configured.');
+    http_response_code(500);
+    die('The service is not configured. Please contact the administrator.');
+}
+
+$lastError = 'No valid database profile is configured.';
+foreach ($dbConfigs as $dbConfig) {
+    if (!is_array($dbConfig)
+        || empty($dbConfig['host'])
+        || empty($dbConfig['db'])
+        || empty($dbConfig['user'])
+        || !array_key_exists('pass', $dbConfig)) {
+        $lastError = 'Invalid database profile.';
+        continue;
+    }
+    $profileCharset = (string)($dbConfig['charset'] ?? $charset);
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $profileCharset)) {
+        $lastError = 'Invalid database charset.';
+        continue;
+    }
+    try {
+        $dsn = "mysql:host={$dbConfig['host']};dbname={$dbConfig['db']};charset={$profileCharset}";
+        $pdo = new PDO($dsn, (string)$dbConfig['user'], (string)$dbConfig['pass'], $options);
+        break;
+    } catch (PDOException $ex) {
+        // Do not write DSNs or credentials to public logs.
+        $lastError = 'Database connection failed.';
+    }
+}
+
+// SQLite is an optional local-development fallback only.
+if (!$pdo && !$isProduction && extension_loaded('pdo_sqlite')) {
     $sqlitePath = __DIR__ . '/storage/database/mknet.sqlite';
-    $sqliteDir = dirname($sqlitePath);
-    if (!is_dir($sqliteDir)) @mkdir($sqliteDir, 0777, true);
-    if (file_exists($sqlitePath) && extension_loaded('pdo_sqlite')) {
+    if (is_file($sqlitePath)) {
         try {
             $pdo = new PDO("sqlite:" . $sqlitePath, null, null, $options);
-            @$pdo->exec("PRAGMA journal_mode=WAL;");
-            @$pdo->exec("PRAGMA synchronous=NORMAL;");
+            $pdo->exec("PRAGMA journal_mode=WAL;");
+            $pdo->exec("PRAGMA synchronous=NORMAL;");
         } catch (PDOException $ex) {
-            $lastError = $ex->getMessage();
+            $lastError = 'Local SQLite connection failed.';
         }
     }
 }
 
-// 3. Fallback to Local MySQL if SQLite not active
 if (!$pdo) {
-    $dbConfigs = [
-      ['host' => '127.0.0.1', 'db' => 'mknet', 'user' => 'root', 'pass' => ''],
-      ['host' => 'localhost', 'db' => 'mknet', 'user' => 'root', 'pass' => ''],
-      ['host' => 'sql301.infinityfree.com', 'db' => 'if0_42585245_mknet', 'user' => 'if0_42585245', 'pass' => 'mknet123'],
-    ];
-
-    foreach ($dbConfigs as $cfg) {
-      try {
-        $dsn = "mysql:host={$cfg['host']};dbname={$cfg['db']};charset=utf8mb4";
-        $pdo = new PDO($dsn, $cfg['user'], $cfg['pass'], $options);
-        break;
-      } catch (PDOException $ex) {
-        $lastError = $ex->getMessage();
-      }
-    }
-}
-
-if (!$pdo) {
-  app_log('db', 'Connection failed: ' . $lastError);
-  if (APP_DEBUG) {
-    die("DB connection failed: " . $lastError);
-  }
-  http_response_code(500);
-  die("Sorry, the site is temporarily unavailable. Please try again shortly.");
+    app_log('db', $lastError);
+    http_response_code(500);
+    die('Sorry, the site is temporarily unavailable. Please try again shortly.');
 }
 
 // Auto-bootstrap DB schema if required tables are missing
@@ -552,14 +583,12 @@ function ensure_mknet_db_schema(PDO $pdo): void {
       $pdo->exec("ALTER TABLE `admins` ADD COLUMN `role` VARCHAR(30) NOT NULL DEFAULT 'admin'");
     }
 
-    // Ensure admin user exists with password admin123
-    $defaultAdminHash = '$2y$10$EZcXlK.hHYxcPVEQjyhgme48S5bj/WcuXiX.yuolpDaVZ8JHlNkji';
-    $admCheck = $pdo->query("SELECT id FROM admins WHERE username='admin' LIMIT 1")->fetch();
-    if (!$admCheck) {
-      $pdo->exec("INSERT INTO admins (username, password, role) VALUES ('admin', '$defaultAdminHash', 'admin')");
-    } else {
-      $pdo->exec("UPDATE admins SET password='$defaultAdminHash' WHERE username='admin'");
-    }
+    // Never create or reset a predictable default admin password during web requests.
+// Initial administrator provisioning is a separate CLI-only, owner-controlled action.
+$admCheck = $pdo->query("SELECT id FROM admins LIMIT 1")->fetch();
+if (!$admCheck) {
+    app_log('security', 'No administrator account exists; run the CLI provisioning script.');
+}
 
     // 12. Ensure `payment_transactions` table exists
     $pdo->exec("CREATE TABLE IF NOT EXISTS `payment_transactions` (

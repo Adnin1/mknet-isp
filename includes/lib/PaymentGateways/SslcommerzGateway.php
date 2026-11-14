@@ -38,11 +38,13 @@ class SslcommerzGateway implements GatewayInterface
     public function initiate(array $transaction): array
     {
         if (!$this->isConfigured()) {
-            // Dev-mode fallback: let the checkout flow be fully tested without real credentials.
-            return [
-                'mode' => 'simulate',
-                'url' => "/pages/payment_callback.php?invoice_id=" . urlencode((string)$transaction['invoice_id']) . '&status=success&gateway=sslcommerz_sim',
-            ];
+            if (function_exists('mknet_is_local_simulation_request') && mknet_is_local_simulation_request()) {
+                return [
+                    'mode' => 'simulate',
+                    'url' => "/pages/payment_callback.php?invoice_id=" . urlencode((string)$transaction['invoice_id']) . '&status=success&gateway=sslcommerz_sim',
+                ];
+            }
+            throw new RuntimeException('SSLCommerz is not configured for live payments.');
         }
 
         $base = !empty($this->cfg['sandbox'])
@@ -99,6 +101,9 @@ class SslcommerzGateway implements GatewayInterface
     {
         // Simulated dev-mode callback - no real gateway involved.
         if (($requestData['gateway'] ?? '') === 'sslcommerz_sim') {
+            if (!function_exists('mknet_is_local_simulation_request') || !mknet_is_local_simulation_request()) {
+                return ['success' => false, 'gateway_txn_id' => null, 'raw' => ['reason' => 'SIMULATION_DISABLED']];
+            }
             return ['success' => ($requestData['status'] ?? '') === 'success', 'gateway_txn_id' => 'SIM-' . time(), 'raw' => $requestData];
         }
 

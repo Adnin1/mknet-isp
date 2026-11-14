@@ -69,10 +69,13 @@ class BkashGateway implements GatewayInterface
     public function initiate(array $transaction): array
     {
         if (!$this->isConfigured()) {
-            return [
-                'mode' => 'simulate',
-                'url' => "/pages/payment_callback.php?invoice_id=" . urlencode((string)$transaction['invoice_id']) . '&status=success&gateway=bkash_sim',
-            ];
+            if (function_exists('mknet_is_local_simulation_request') && mknet_is_local_simulation_request()) {
+                return [
+                    'mode' => 'simulate',
+                    'url' => "/pages/payment_callback.php?invoice_id=" . urlencode((string)$transaction['invoice_id']) . '&status=success&gateway=bkash_sim',
+                ];
+            }
+            throw new RuntimeException('bKash is not configured for live payments.');
         }
 
         $token = $this->grantToken();
@@ -112,6 +115,9 @@ class BkashGateway implements GatewayInterface
     public function handleCallback(array $requestData): array
     {
         if (($requestData['gateway'] ?? '') === 'bkash_sim') {
+            if (!function_exists('mknet_is_local_simulation_request') || !mknet_is_local_simulation_request()) {
+                return ['success' => false, 'gateway_txn_id' => null, 'raw' => ['reason' => 'SIMULATION_DISABLED']];
+            }
             return ['success' => ($requestData['status'] ?? '') === 'success', 'gateway_txn_id' => 'SIM-' . time(), 'raw' => $requestData];
         }
 
