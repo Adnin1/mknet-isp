@@ -69,4 +69,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Check whitespace errors
-        run: git diff --check ${{ github.event.pull_request.base.sha }}...HEAD
+        if: github.event_name == 'pull_request'
+        run: git diff --check "${{ github.event.pull_request.base.sha }}...HEAD"
+      - name: Check latest commit whitespace on push
+        if: github.event_name == 'push'
+        run: git diff --check HEAD^ HEAD
