@@ -19,10 +19,10 @@ jobs:
         php-version: ['8.2', '8.3']
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
           php-version: ${{ matrix.php-version }}
           extensions: curl, json, openssl, pdo, pdo_mysql, pdo_sqlite
@@ -36,7 +36,7 @@ jobs:
           while IFS= read -r -d '' file; do
             php -l "$file" >/dev/null
             count=$((count + 1))
-          done < <(find . -type f -name '*.php'             -not -path './.git/*'             -not -path './vendor/*'             -not -path './storage/*' -print0)
+          done < <(git ls-files -z '*.php')
           test "$count" -gt 0
           echo "PHP syntax PASS: $count files"
 
@@ -55,7 +55,7 @@ jobs:
           echo "Private configuration tracking guard PASS"
 
       - name: Python syntax check for local audit helper
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
 
@@ -66,10 +66,10 @@ jobs:
     name: Patch hygiene
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository with full history
-        uses: actions/checkout@v4
+      - name: Checkout repository (minimal depth for parent diff)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
+          fetch-depth: 2
 
       - name: Check pull request patch whitespace
         if: github.event_name == 'pull_request'
@@ -78,22 +78,23 @@ jobs:
           set -euo pipefail
           BASE_SHA="${{ github.event.pull_request.base.sha }}"
           HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
+            echo "::error::Missing pull_request base or head SHA."
+            exit 1
+          fi
           echo "Comparing pull request base $BASE_SHA to head $HEAD_SHA"
-          git fetch origin "$BASE_SHA" --depth=1 || true
-          git fetch origin "$HEAD_SHA" --depth=1 || true
-          git diff --check "$BASE_SHA...$HEAD_SHA"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git fetch --no-tags --depth=1 origin "$HEAD_SHA"
+          git diff --check "$BASE_SHA" "$HEAD_SHA" --
 
       - name: Check latest commit whitespace on push
         if: github.event_name == 'push'
         shell: bash
         run: |
           set -euo pipefail
-          BEFORE="${{ github.event.before }}"
-          AFTER="${{ github.sha }}"
-          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            echo "Initial commit or new branch; checking against empty tree"
-            git diff --check 4b825dc642cb6eb9a060e54bf8d69288fbee4904 "$AFTER"
+          if git rev-parse --verify HEAD^1 >/dev/null 2>&1; then
+            git diff --check HEAD^1 HEAD --
           else
-            echo "Checking push commits between $BEFORE and $AFTER"
-            git diff --check "$BEFORE...$AFTER"
+            echo "Initial commit on branch; checking against empty tree"
+            git diff --check 4b825dc642cb6eb9a060e54bf8d69288fbee4904 HEAD --
           fi
