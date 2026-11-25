@@ -456,11 +456,11 @@ check("AdminAuth::deleteAdminSafely blocks self-deletion", $delSelf['ok'] === fa
 
 echo "\n=== 6. Session Cookie Hardening, Logout & Zero Request-Time DDL ===\n";
 [$rcSessProd, $outSessProd] = runPhpWithEnv(
-    "register_shutdown_function(function(){ echo 'STRICT=' . ini_get('session.use_strict_mode') . ';HTTPONLY=' . ini_get('session.cookie_httponly') . ';SAMESITE=' . ini_get('session.cookie_samesite') . ';SECURE=' . ini_get('session.cookie_secure'); }); require '{$cfgFile}';",
+    "register_shutdown_function(function(){ echo 'STRICT=' . ini_get('session.use_strict_mode') . ';ONLY_COOKIES=' . ini_get('session.use_only_cookies') . ';HTTPONLY=' . ini_get('session.cookie_httponly') . ';SAMESITE=' . ini_get('session.cookie_samesite') . ';SECURE=' . ini_get('session.cookie_secure'); }); require '{$cfgFile}';",
     ['MKNET_ENV' => 'production', 'MKNET_DB_HOST' => null, 'MKNET_DB_NAME' => null, 'MKNET_DB_USER' => null, 'MKNET_DB_PASSWORD' => null]
 );
-check("config.php sets strict_mode=1, httponly=1, samesite=Lax, cookie_secure=1 in production",
-    str_contains($outSessProd, 'STRICT=1;HTTPONLY=1;SAMESITE=Lax;SECURE=1')
+check("config.php sets strict_mode=1, use_only_cookies=1, httponly=1, samesite=Lax, cookie_secure=1 in production",
+    str_contains($outSessProd, 'STRICT=1;ONLY_COOKIES=1;HTTPONLY=1;SAMESITE=Lax;SECURE=1')
 );
 
 $logoutResp = $httpReq('GET', '/admin/logout.php', [], $saCookie);

@@ -32,6 +32,7 @@ if (session_status() === PHP_SESSION_NONE) {
         || $trustedProxyHttps;
 
     ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_samesite', 'Lax');
     if ($mknetSessionEnv === 'production' || $isHttpsRequest) {
@@ -328,7 +329,7 @@ ensure_mknet_db_schema($pdo);
 // for all protected admin routes (executes before any page-specific GET/POST handler runs).
 if (PHP_SAPI !== 'cli') {
     $scriptPath = str_replace('\\', '/', (string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['SCRIPT_NAME'] ?? ''));
-    if ($scriptPath !== '' && preg_match('#/admin/(?!login\.php$|logout\.php$|forgot_password\.php$|reset_password\.php$|accept_invite\.php$)[^/]+\.php$#i', $scriptPath)) {
+    if ($scriptPath !== '' && preg_match('#/admin/(?!login\.php$|logout\.php$|forgot_password\.php$|reset_password\.php$|accept_invite\.php$).+\.php$#i', $scriptPath)) {
         require_once __DIR__ . '/includes/lib/AdminAuth.php';
         $currentAdmin = AdminAuth::requireAdmin($pdo);
     }
