@@ -220,9 +220,12 @@ $options = [
   PDO::ATTR_TIMEOUT => 2,
 ];
 
-// Explicit environment selection: do not infer production from the client-controlled HTTP Host header.
+// Explicit environment selection: do not infer environment from HTTP Host header.
+// Unset or unrecognized MKNET_ENV values fail closed (only explicit development/local/testing allow local defaults).
 $pdo = null;
-$isProduction = strtolower(trim((string)(getenv('MKNET_ENV') ?: ''))) === 'production';
+$mknetEnv = strtolower(trim((string)(getenv('MKNET_ENV') ?: '')));
+$isExplicitLocalDev = in_array($mknetEnv, ['development', 'local', 'testing'], true);
+$isProduction = ($mknetEnv === 'production');
 $databaseConfigFile = __DIR__ . '/config/database.php';
 $dbConfigs = [];
 
@@ -246,8 +249,8 @@ if (is_file($databaseConfigFile)) {
             'user' => $envUser,
             'pass' => $envPass,
         ];
-    } elseif (!$isProduction) {
-        // Safe local-development defaults only. Production never falls back to these.
+    } elseif ($isExplicitLocalDev) {
+        // Explicit local-development defaults only. Unset, staging, and production never fall back to these.
         $dbConfigs[] = [
             'host' => '127.0.0.1',
             'db' => 'mknet',
@@ -257,8 +260,8 @@ if (is_file($databaseConfigFile)) {
     }
 }
 
-if ($isProduction && $dbConfigs === []) {
-    app_log('db', 'Production database credentials are not configured.');
+if (!$isExplicitLocalDev && $dbConfigs === []) {
+    app_log('db', 'Database credentials are not configured and environment is not explicit local development.');
     http_response_code(500);
     die('The service is not configured. Please contact the administrator.');
 }
@@ -288,8 +291,8 @@ foreach ($dbConfigs as $dbConfig) {
     }
 }
 
-// SQLite is an optional local-development fallback only.
-if (!$pdo && !$isProduction && extension_loaded('pdo_sqlite')) {
+// SQLite is an explicit local-development fallback only.
+if (!$pdo && $isExplicitLocalDev && extension_loaded('pdo_sqlite')) {
     $sqlitePath = __DIR__ . '/storage/database/mknet.sqlite';
     if (is_file($sqlitePath)) {
         try {
