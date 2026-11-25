@@ -2,17 +2,22 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/lib/AdminPasswordPolicy.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-$token = trim($_GET['token'] ?? '');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Referrer-Policy: no-referrer');
+
+$token = trim((string)($_POST['token'] ?? $_GET['token'] ?? ''));
 $error = '';
 $success = '';
 $invite = null;
 
 if ($token !== '') {
-    $stmt = $pdo->prepare("SELECT * FROM admin_invitations WHERE token = ? AND status = 'pending' AND expires_at >= NOW() LIMIT 1");
-    $stmt->execute([$token]);
+    $now = date('Y-m-d H:i:s');
+    $stmt = $pdo->prepare("SELECT * FROM admin_invitations WHERE token = ? AND status = 'pending' AND expires_at >= ? LIMIT 1");
+    $stmt->execute([$token, $now]);
     $invite = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$invite) {
@@ -26,29 +31,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $invite) {
     if (!csrf_verify()) {
         $error = "Session expired. Please try again.";
     } else {
-        $username = trim($_POST['username'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $confirmPassword = $_POST['confirm_password'] ?? '';
+        $username = trim((string)($_POST['username'] ?? ''));
+        $password = (string)($_POST['password'] ?? '');
+        $confirmPassword = (string)($_POST['confirm_password'] ?? '');
 
-        if ($username === '' || strlen($password) < 6) {
-            $error = "Username is required and password must be at least 6 characters.";
+        if ($username === '') {
+            $error = "Username is required.";
         } elseif ($password !== $confirmPassword) {
             $error = "Passwords do not match.";
         } else {
-            $hash = password_hash($password, PASSWORD_BCRYPT);
-            try {
-                $ins = $pdo->prepare("INSERT INTO admins (username, email, password, role) VALUES (?, ?, ?, ?)");
-                $ins->execute([$username, $invite['email'], $hash, $invite['role']]);
+            $policyErrors = AdminPasswordPolicy::validate($password, $username);
+            if ($policyErrors !== []) {
+                $error = $policyErrors[0];
+            } else {
+                try {
+                    $hash = AdminPasswordPolicy::hash($password);
+                    $pdo->beginTransaction();
 
-                // Mark invitation accepted
-                $upd = $pdo->prepare("UPDATE admin_invitations SET status = 'accepted' WHERE id = ?");
-                $upd->execute([$invite['id']]);
+                    $upd = $pdo->prepare("UPDATE admin_invitations SET status = 'accepted' WHERE id = ? AND status = 'pending'");
+                    $upd->execute([$invite['id']]);
+                    if ($upd->rowCount() !== 1) {
+                        $pdo->rollBack();
+                        $error = "Invalid or expired admin invitation token.";
+                    } else {
+                        $ins = $pdo->prepare("INSERT INTO admins (username, email, password, role) VALUES (?, ?, ?, ?)");
+                        $ins->execute([$username, $invite['email'], $hash, $invite['role']]);
+                        $pdo->commit();
 
-                $_SESSION['admin_invite_success'] = "Account '$username' created successfully! You can now log in.";
-                header("Location: login.php");
-                exit;
-            } catch (PDOException $ex) {
-                $error = "Error: Username '$username' already exists. Please choose a different username.";
+                        $_SESSION['admin_invite_success'] = "Account '$username' created successfully! You can now log in.";
+                        header("Location: login.php");
+                        exit;
+                    }
+                } catch (PDOException $ex) {
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+                    $error = "Error: Username '$username' already exists. Please choose a different username.";
+                } catch (Throwable $ex) {
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+                    $error = "Unable to create admin account right now.";
+                }
             }
         }
     }
@@ -107,6 +131,7 @@ body {
     <?php if ($invite): ?>
         <form method="post">
             <?= csrf_field() ?>
+            <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES, 'UTF-8') ?>">
             
             <div style="margin-bottom: 16px;">
                 <label style="display: block; color: #cbd5e1; font-size: 0.88rem; margin-bottom: 6px;">Desired Admin Username</label>
@@ -115,7 +140,7 @@ body {
 
             <div style="margin-bottom: 16px;">
                 <label style="display: block; color: #cbd5e1; font-size: 0.88rem; margin-bottom: 6px;">New Password</label>
-                <input type="password" name="password" required placeholder="At least 6 characters" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(15,23,42,0.9); border: 1px solid rgba(255,255,255,0.2); color: #fff; box-sizing: border-box;">
+                <input type="password" name="password" required placeholder="At least 15 characters" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(15,23,42,0.9); border: 1px solid rgba(255,255,255,0.2); color: #fff; box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 24px;">

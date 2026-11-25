@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/lib/AdminPasswordPolicy.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['admin_id'])) { header("Location: login.php"); exit; }
 
@@ -17,19 +18,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['send_invitation'])) {
             $email = trim($_POST['email'] ?? '');
             $role = $_POST['role'] ?? 'admin';
+            $baseUrl = AdminPasswordPolicy::trustedBaseUrl();
 
-            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if ($baseUrl === '') {
+                $message = "Trusted MKNET_APP_URL (HTTPS) must be configured before generating invitation links.";
+                $messageType = "error";
+            } elseif (filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $token = bin2hex(random_bytes(32));
                 $expiresAt = date('Y-m-d H:i:s', strtotime('+7 days'));
 
                 $stmt = $pdo->prepare("INSERT INTO admin_invitations (email, role, token, expires_at) VALUES (?, ?, ?, ?)");
                 $stmt->execute([$email, $role, $token, $expiresAt]);
 
-                $domain = $_SERVER['HTTP_HOST'] ?? 'localhost';
-                $generatedInviteLink = "http://" . $domain . "/admin/accept_invite.php?token=" . $token;
+                $generatedInviteLink = $baseUrl . "/admin/accept_invite.php?token=" . urlencode($token);
 
                 try {
-                    Mailer::send($email, "MK Net Admin Invitation", "Hello,\n\nYou have been invited to become an Admin on MK Net.\nRole: $role\n\nClick the link below to accept your invitation:\n$generatedInviteLink\n\nLink expires in 7 days.");
+                    Mailer::send($email, $email, "MK Net Admin Invitation", "Hello,\n\nYou have been invited to become an Admin on MK Net.\nRole: $role\n\nClick the link below to accept your invitation:\n$generatedInviteLink\n\nLink expires in 7 days.");
                 } catch (Throwable $t) {}
 
                 $message = "Invitation link generated successfully for '$email'!";
@@ -47,16 +51,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $password = $_POST['password'] ?? '';
             $role = $_POST['role'] ?? 'admin';
 
-            if ($username !== '' && $password !== '') {
-                $hash = password_hash($password, PASSWORD_BCRYPT);
-                try {
-                    $stmt = $pdo->prepare("INSERT INTO admins (username, email, password, role) VALUES (?, ?, ?, ?)");
-                    $stmt->execute([$username, $email ?: null, $hash, $role]);
-                    $message = "Admin account '$username' created successfully!";
-                    $messageType = "success";
-                } catch (PDOException $ex) {
-                    $message = "Error: Username or email already exists.";
+            if ($username !== '') {
+                $policyErrors = AdminPasswordPolicy::validate($password, $username);
+                if ($policyErrors !== []) {
+                    $message = $policyErrors[0];
                     $messageType = "error";
+                } else {
+                    try {
+                        $hash = AdminPasswordPolicy::hash($password);
+                        $stmt = $pdo->prepare("INSERT INTO admins (username, email, password, role) VALUES (?, ?, ?, ?)");
+                        $stmt->execute([$username, $email ?: null, $hash, $role]);
+                        $message = "Admin account '$username' created successfully!";
+                        $messageType = "success";
+                    } catch (PDOException $ex) {
+                        $message = "Error: Username or email already exists.";
+                        $messageType = "error";
+                    } catch (Throwable $ex) {
+                        $message = "Unable to create admin account.";
+                        $messageType = "error";
+                    }
                 }
             } else {
                 $message = "Username and password are required.";
@@ -68,16 +81,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['change_password'])) {
             $targetAdminId = (int)$_POST['admin_id'];
             $newPassword = $_POST['new_password'] ?? '';
+            $uStmt = $pdo->prepare("SELECT username FROM admins WHERE id = ? LIMIT 1");
+            $uStmt->execute([$targetAdminId]);
+            $targetUsername = (string)($uStmt->fetchColumn() ?: '');
 
-            if ($newPassword !== '' && strlen($newPassword) >= 6) {
-                $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
-                $stmt = $pdo->prepare("UPDATE admins SET password = ? WHERE id = ?");
-                $stmt->execute([$newHash, $targetAdminId]);
-                $message = "Password updated successfully for Admin ID #$targetAdminId!";
-                $messageType = "success";
-            } else {
-                $message = "Password must be at least 6 characters long.";
+            $policyErrors = AdminPasswordPolicy::validate($newPassword, $targetUsername);
+            if ($policyErrors !== []) {
+                $message = $policyErrors[0];
                 $messageType = "error";
+            } else {
+                try {
+                    $newHash = AdminPasswordPolicy::hash($newPassword);
+                    $stmt = $pdo->prepare("UPDATE admins SET password = ? WHERE id = ?");
+                    $stmt->execute([$newHash, $targetAdminId]);
+                    $message = "Password updated successfully for Admin ID #$targetAdminId!";
+                    $messageType = "success";
+                } catch (Throwable $ex) {
+                    $message = "Unable to update admin password.";
+                    $messageType = "error";
+                }
             }
         }
 
@@ -98,16 +120,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch all admins safely
-$adminCols = $pdo->query("SHOW COLUMNS FROM admins")->fetchAll(PDO::FETCH_COLUMN);
 $selectFields = ['id', 'username'];
-if (in_array('email', $adminCols)) $selectFields[] = 'email';
-if (in_array('role', $adminCols)) $selectFields[] = 'role';
-if (in_array('created_at', $adminCols)) $selectFields[] = 'created_at';
+try {
+    $adminCols = $pdo->query("SHOW COLUMNS FROM admins")->fetchAll(PDO::FETCH_COLUMN);
+    if (in_array('email', $adminCols)) $selectFields[] = 'email';
+    if (in_array('role', $adminCols)) $selectFields[] = 'role';
+    if (in_array('created_at', $adminCols)) $selectFields[] = 'created_at';
+} catch (Throwable $e) {
+    $selectFields = ['id', 'username', 'email', 'role', 'created_at'];
+}
 
 $admins = $pdo->query("SELECT " . implode(', ', $selectFields) . " FROM admins ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch pending invitations
-$pendingInvitations = $pdo->query("SELECT * FROM admin_invitations WHERE status='pending' AND expires_at >= NOW() ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+$nowStmt = $pdo->prepare("SELECT * FROM admin_invitations WHERE status='pending' AND expires_at >= ? ORDER BY id DESC");
+$nowStmt->execute([date('Y-m-d H:i:s')]);
+$pendingInvitations = $nowStmt->fetchAll(PDO::FETCH_ASSOC);
 
 include __DIR__ . '/header.php';
 ?>
