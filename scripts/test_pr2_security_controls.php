@@ -151,6 +151,7 @@ $nagadRes = $nagad->handleCallback(['status' => 'Success', 'payment_ref_id' => '
 check("Nagad fails closed on unverified callback", ($nagadRes['success'] ?? true) === false);
 
 echo "\n=== 4. Shared AdminPasswordPolicy & HTTP SAPI Auth/Reset/Invite Tests ===\n";
+require_once $pr2Root . '/includes/lib/AdminAuth.php';
 require_once $pr2Root . '/includes/lib/AdminPasswordPolicy.php';
 
 check("AdminPasswordPolicy rejects 14-char password", AdminPasswordPolicy::validate('FourteenChar14', 'secadmin') !== []);
@@ -173,11 +174,15 @@ $pdoTest->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdoTest->exec("CREATE TABLE admins (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, email TEXT, password TEXT, role TEXT, theme_preference TEXT, created_at TEXT)");
 $pdoTest->exec("CREATE TABLE password_resets (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, token TEXT, expires_at TEXT)");
 $pdoTest->exec("CREATE TABLE admin_invitations (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, role TEXT, token TEXT, status TEXT DEFAULT 'pending', expires_at TEXT)");
+$pdoTest->exec("CREATE TABLE auth_rate_limits (rate_key VARCHAR(128) PRIMARY KEY, attempts INT NOT NULL, window_start INT NOT NULL, expires_at INT NOT NULL)");
 $realHash = AdminPasswordPolicy::hash('RealAdminPassphrase2026!');
 $stmtIns = $pdoTest->prepare("INSERT INTO admins (id, username, email, password, role) VALUES (7, 'realadmin', 'real@mknet.test', ?, 'superadmin')");
 $stmtIns->execute([$realHash]);
-$stmtInvite = $pdoTest->prepare("INSERT INTO admin_invitations (email, role, token, status, expires_at) VALUES ('invitee@mknet.test', 'admin', 'validinvitetoken123', 'pending', ?)");
-$stmtInvite->execute([date('Y-m-d H:i:s', time() + 3600)]);
+$normalHash = AdminPasswordPolicy::hash('NormalAdminPassphrase2026!');
+$stmtNorm = $pdoTest->prepare("INSERT INTO admins (id, username, email, password, role) VALUES (8, 'normaladmin', 'normal@mknet.test', ?, 'admin')");
+$stmtNorm->execute([$normalHash]);
+$stmtInvite = $pdoTest->prepare("INSERT INTO admin_invitations (email, role, token, status, expires_at) VALUES ('invitee@mknet.test', 'admin', ?, 'pending', ?)");
+$stmtInvite->execute([hash('sha256', 'validinvitetoken123'), date('Y-m-d H:i:s', time() + 3600)]);
 $pdoTest = null;
 
 $testConfig = <<<'PHP'
@@ -215,11 +220,12 @@ if (!class_exists('Mailer')) {
 }
 PHP;
 file_put_contents($sapiDir . '/config.php', $testConfig);
+copy($pr2Root . '/includes/lib/AdminAuth.php', $sapiDir . '/includes/lib/AdminAuth.php');
 copy($pr2Root . '/includes/lib/AdminPasswordPolicy.php', $sapiDir . '/includes/lib/AdminPasswordPolicy.php');
-foreach (['login.php', 'forgot_password.php', 'reset_password.php', 'accept_invite.php', 'manage_admins.php'] as $f) {
+foreach (['login.php', 'logout.php', 'forgot_password.php', 'reset_password.php', 'accept_invite.php', 'manage_admins.php'] as $f) {
     copy($pr2Root . '/admin/' . $f, $sapiDir . '/admin/' . $f);
 }
-file_put_contents($sapiDir . '/admin/dashboard.php', "<?php\nif (session_status() === PHP_SESSION_NONE) session_start();\necho 'DASHBOARD_ID=' . (\$_SESSION['admin_id'] ?? 'NONE');\n");
+file_put_contents($sapiDir . '/admin/dashboard.php', "<?php\nrequire_once __DIR__ . '/../config.php';\nrequire_once __DIR__ . '/../includes/lib/AdminAuth.php';\n\$a = AdminAuth::requireAdmin(\$pdo);\necho 'DASHBOARD_ID=' . (int)\$a['id'] . ';ROLE=' . \$a['role'];\n");
 file_put_contents($sapiDir . '/admin/header.php', "<html><body>\n");
 
 $sock = @stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
@@ -289,7 +295,7 @@ $realPost = $httpReq('POST', '/admin/login.php', ['csrf_token' => $csrf1, 'usern
 check("Real DB admin login redirects to dashboard.php", $realPost['status'] === 302 && $realPost['location'] === 'dashboard.php');
 check("session_regenerate_id rotates session cookie on login", $realPost['cookie'] !== '' && $realPost['cookie'] !== $loginGet['cookie']);
 $dashGet = $httpReq('GET', '/admin/dashboard.php', [], $realPost['cookie']);
-check("Logged-in admin session carries real DB id=7 (no ?? 1 fallback)", trim($dashGet['body']) === 'DASHBOARD_ID=7');
+check("Logged-in admin session carries real DB id=7 (no ?? 1 fallback)", trim($dashGet['body']) === 'DASHBOARD_ID=7;ROLE=superadmin');
 
 // 4b. Forgot password generic response, SHA-256 token storage, no token leak, rate limiting
 $fpGet1 = $httpReq('GET', '/admin/forgot_password.php');
@@ -340,7 +346,11 @@ check("reset_password.php stores Argon2id hash", str_starts_with($updatedHash, '
 $rpReplay = $httpReq('POST', '/admin/reset_password.php?token=' . $rawResetToken, ['csrf_token' => $rpCsrf, 'token' => $rawResetToken, 'newpass' => 'AnotherPassphrase2026!'], $rpGet['cookie']);
 check("reset_password.php blocks token replay", str_contains($rpReplay['body'], 'Invalid or expired token'));
 
-// 4d. accept_invite.php enforces 15-char NIST policy & Argon2id
+// Verify password reset immediately revokes prior authenticated session
+$dashAfterReset = $httpReq('GET', '/admin/dashboard.php', [], $realPost['cookie']);
+check("Password reset immediately revokes prior authenticated admin session", $dashAfterReset['status'] === 302 && $dashAfterReset['location'] === 'login.php');
+
+// 4d. accept_invite.php enforces 15-char NIST policy, SHA-256 token hash, & Argon2id
 $invGet = $httpReq('GET', '/admin/accept_invite.php?token=validinvitetoken123');
 $invCsrf = $extractCsrf($invGet['body']);
 $invWeak = $httpReq('POST', '/admin/accept_invite.php?token=validinvitetoken123', [
@@ -354,17 +364,36 @@ $invOk = $httpReq('POST', '/admin/accept_invite.php?token=validinvitetoken123', 
 check("accept_invite.php accepts 15+ char passphrase and redirects to login.php", $invOk['status'] === 302 && $invOk['location'] === 'login.php');
 $invHash = (string)$pdoCheck->query("SELECT password FROM admins WHERE username = 'invadmin'")->fetchColumn();
 check("accept_invite.php stores Argon2id hash", str_starts_with($invHash, '$argon2id$'));
+$invReplay = $httpReq('GET', '/admin/accept_invite.php?token=validinvitetoken123');
+check("accept_invite.php rejects replay of consumed invitation token", str_contains($invReplay['body'], 'Invalid or expired admin invitation token'));
 
-// 4e. manage_admins.php uses trusted HTTPS MKNET_APP_URL (never HTTP_HOST) and enforces 15-char Argon2id policy
-$maGet = $httpReq('GET', '/admin/manage_admins.php', [], $realPost['cookie']);
+// Re-authenticate superadmin with new password after reset
+$saLoginGet = $httpReq('GET', '/admin/login.php');
+$saLoginPost = $httpReq('POST', '/admin/login.php', [
+    'csrf_token' => $extractCsrf($saLoginGet['body']), 'username' => 'realadmin', 'password' => 'NewResetPassphrase2026!'
+], $saLoginGet['cookie']);
+$saCookie = $saLoginPost['cookie'];
+
+// 4e. manage_admins.php: invitation token hashed in DB, not leaked in HTML, trusted MKNET_APP_URL
+$maGet = $httpReq('GET', '/admin/manage_admins.php', [], $saCookie);
 $maCsrf = $extractCsrf($maGet['body']);
+$mailLinesBeforeInv = count(file($mailSinkFile));
 $maInv = $httpReq('POST', '/admin/manage_admins.php', [
     'csrf_token' => $maCsrf, 'send_invitation' => '1', 'email' => 'newadmin@mknet.test', 'role' => 'admin'
-], $realPost['cookie']);
-check("manage_admins.php generates HTTPS invitation URL from MKNET_APP_URL", str_contains($maInv['body'], 'https://admin.mknet.test/admin/accept_invite.php?token='));
+], $saCookie);
+$mailLinesAfterInv = file($mailSinkFile);
+$invMailLine = (string)end($mailLinesAfterInv);
+$rawInvToken = '';
+if (preg_match('/accept_invite\.php\?token=([a-f0-9]{64})/', $invMailLine, $m)) {
+    $rawInvToken = $m[1];
+}
+$storedInvToken = (string)$pdoCheck->query("SELECT token FROM admin_invitations WHERE email = 'newadmin@mknet.test' ORDER BY id DESC LIMIT 1")->fetchColumn();
+check("manage_admins.php sends HTTPS invitation URL from MKNET_APP_URL via Mailer", $rawInvToken !== '' && str_contains($invMailLine, 'https://admin.mknet.test/admin/accept_invite.php?token='));
+check("manage_admins.php stores SHA-256 hash of invitation token (never raw token)", $storedInvToken === hash('sha256', $rawInvToken) && $storedInvToken !== $rawInvToken);
+check("manage_admins.php does NOT disclose raw invitation token/link in HTTP response", !str_contains($maInv['body'], $rawInvToken) && !str_contains($maInv['body'], 'accept_invite.php?token='));
 $maWeak = $httpReq('POST', '/admin/manage_admins.php', [
     'csrf_token' => $maCsrf, 'create_admin' => '1', 'username' => 'weakadmin', 'email' => 'weak@mknet.test', 'password' => 'short123', 'role' => 'admin'
-], $realPost['cookie']);
+], $saCookie);
 check("manage_admins.php rejects weak admin password on create_admin", str_contains($maWeak['body'], '15 and 128'));
 check("AdminPasswordPolicy::trustedBaseUrl fails closed without MKNET_APP_URL", (function(): bool {
     $prev = getenv('MKNET_APP_URL');
@@ -373,6 +402,71 @@ check("AdminPasswordPolicy::trustedBaseUrl fails closed without MKNET_APP_URL", 
     if ($prev === false) putenv('MKNET_APP_URL'); else putenv("MKNET_APP_URL={$prev}");
     return $res === '';
 })());
+
+echo "\n=== 5. P0 Admin Role Privilege Escalation & Last-Superadmin Guard ===\n";
+$unauthMa = $httpReq('GET', '/admin/manage_admins.php');
+check("Unauthenticated visitor redirected from manage_admins.php", $unauthMa['status'] === 302 && $unauthMa['location'] === 'login.php');
+
+$normLoginGet = $httpReq('GET', '/admin/login.php');
+$normLoginPost = $httpReq('POST', '/admin/login.php', [
+    'csrf_token' => $extractCsrf($normLoginGet['body']), 'username' => 'normaladmin', 'password' => 'NormalAdminPassphrase2026!'
+], $normLoginGet['cookie']);
+$normCookie = $normLoginPost['cookie'];
+$normMaGet = $httpReq('GET', '/admin/manage_admins.php', [], $normCookie);
+check("EXPECTED_SECURITY_DENIAL: normal admin GET manage_admins.php returns 403", $normMaGet['status'] === 403);
+
+$adminsBefore = (int)$pdoCheck->query("SELECT COUNT(*) FROM admins")->fetchColumn();
+$superPwBefore = (string)$pdoCheck->query("SELECT password FROM admins WHERE id = 7")->fetchColumn();
+$normEscCreate = $httpReq('POST', '/admin/manage_admins.php', [
+    'csrf_token' => $maCsrf, 'create_admin' => '1', 'username' => 'rogue', 'email' => 'rogue@mknet.test', 'password' => 'RogueAdminPassphrase2026!', 'role' => 'superadmin'
+], $normCookie);
+$normEscInvite = $httpReq('POST', '/admin/manage_admins.php', [
+    'csrf_token' => $maCsrf, 'send_invitation' => '1', 'email' => 'rogue@mknet.test', 'role' => 'superadmin'
+], $normCookie);
+$normEscPw = $httpReq('POST', '/admin/manage_admins.php', [
+    'csrf_token' => $maCsrf, 'change_password' => '1', 'admin_id' => '7', 'new_password' => 'HijackedPassphrase2026!'
+], $normCookie);
+$normEscDel = $httpReq('POST', '/admin/manage_admins.php', [
+    'csrf_token' => $maCsrf, 'delete_admin' => '1', 'admin_id' => '7'
+], $normCookie);
+$adminsAfter = (int)$pdoCheck->query("SELECT COUNT(*) FROM admins")->fetchColumn();
+$superPwAfter = (string)$pdoCheck->query("SELECT password FROM admins WHERE id = 7")->fetchColumn();
+check("EXPECTED_SECURITY_DENIAL: normal admin direct POSTs (create/invite/chpw/delete) all return 403 & leave DB unchanged",
+    $normEscCreate['status'] === 403 && $normEscInvite['status'] === 403 && $normEscPw['status'] === 403 && $normEscDel['status'] === 403 &&
+    $adminsBefore === $adminsAfter && $superPwBefore === $superPwAfter
+);
+
+$badRole = $httpReq('POST', '/admin/manage_admins.php', [
+    'csrf_token' => $maCsrf, 'create_admin' => '1', 'username' => 'badroleuser', 'email' => 'bad@mknet.test', 'password' => 'ValidRoleTestPassphrase2026!', 'role' => 'root_god'
+], $saCookie);
+check("Invalid/unknown role is rejected by server-side allowlist", str_contains($badRole['body'], 'Invalid administrator role') && (int)$pdoCheck->query("SELECT COUNT(*) FROM admins WHERE username='badroleuser'")->fetchColumn() === 0);
+
+$badCsrf = $httpReq('POST', '/admin/manage_admins.php', [
+    'csrf_token' => 'forged_csrf_token', 'create_admin' => '1', 'username' => 'csrfuser', 'email' => 'c@mknet.test', 'password' => 'ValidRoleTestPassphrase2026!', 'role' => 'admin'
+], $saCookie);
+check("CSRF-invalid POST to manage_admins.php is rejected", str_contains($badCsrf['body'], 'Session expired') && (int)$pdoCheck->query("SELECT COUNT(*) FROM admins WHERE username='csrfuser'")->fetchColumn() === 0);
+
+// Test last-superadmin protection (create a temporary second superadmin? No, id=7 is the ONLY superadmin; test deleting id=7 as another superadmin or via AdminAuth::canDeleteOrDemoteAdmin)
+check("AdminAuth::canDeleteOrDemoteAdmin blocks deleting the last active superadmin", !AdminAuth::canDeleteOrDemoteAdmin($pdoCheck, 7) && AdminAuth::canDeleteOrDemoteAdmin($pdoCheck, 8));
+
+echo "\n=== 6. Session Cookie Hardening, Logout & Zero Request-Time DDL ===\n";
+[$rcSessProd, $outSessProd] = runPhpWithEnv(
+    "register_shutdown_function(function(){ echo 'STRICT=' . ini_get('session.use_strict_mode') . ';HTTPONLY=' . ini_get('session.cookie_httponly') . ';SAMESITE=' . ini_get('session.cookie_samesite') . ';SECURE=' . ini_get('session.cookie_secure'); }); require '{$cfgFile}';",
+    ['MKNET_ENV' => 'production', 'MKNET_DB_HOST' => null, 'MKNET_DB_NAME' => null, 'MKNET_DB_USER' => null, 'MKNET_DB_PASSWORD' => null]
+);
+check("config.php sets strict_mode=1, httponly=1, samesite=Lax, cookie_secure=1 in production",
+    str_contains($outSessProd, 'STRICT=1;HTTPONLY=1;SAMESITE=Lax;SECURE=1')
+);
+
+$logoutResp = $httpReq('GET', '/admin/logout.php', [], $saCookie);
+$saDashAfterLogout = $httpReq('GET', '/admin/dashboard.php', [], $saCookie);
+check("logout.php destroys session and invalidates subsequent dashboard access", $logoutResp['status'] === 302 && $saDashAfterLogout['status'] === 302 && $saDashAfterLogout['location'] === 'login.php');
+
+$policySrc = (string)file_get_contents($pr2Root . '/includes/lib/AdminPasswordPolicy.php');
+check("AdminPasswordPolicy.php contains zero request-time CREATE TABLE DDL", stripos($policySrc, 'CREATE TABLE') === false);
+check("Additive migration migrations/2026_11_26_auth_rate_limits.sql exists", is_file($pr2Root . '/migrations/2026_11_26_auth_rate_limits.sql'));
+$missingTblPdo = new PDO('sqlite::memory:');
+check("Rate limiter fails closed (returns false) when auth_rate_limits table is missing", AdminPasswordPolicy::checkPersistentRateLimit($missingTblPdo, 'admin_forgot_password', '127.0.0.1|x') === false);
 
 $pdoCheck = null;
 if (is_resource($proc)) {

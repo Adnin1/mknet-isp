@@ -31,8 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       if ($admin && isset($admin['id'], $admin['password']) && AdminPasswordPolicy::verify($password, (string)$admin['password'])) {
         session_regenerate_id(true);
+        $now = time();
         $_SESSION['admin_id'] = (int)$admin['id'];
         $_SESSION['admin_username'] = (string)$admin['username'];
+        $_SESSION['admin_auth_at'] = $now;
+        $_SESSION['admin_last_active'] = $now;
+        $_SESSION['admin_pw_ver'] = hash('sha256', (string)$admin['password']);
         $_SESSION['theme'] = $admin['theme_preference'] ?? 'light';
 
         header("Location: dashboard.php");

@@ -1,10 +1,11 @@
 <?php
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/lib/AdminAuth.php';
 error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING & ~E_DEPRECATED);
 ini_set('display_errors', '0');
 
-if (session_status() === PHP_SESSION_NONE) session_start();
-$adminName = $_SESSION['admin_name'] ?? $_SESSION['admin_user'] ?? 'Admin';
+$currentAdmin = $currentAdmin ?? AdminAuth::requireAdmin($pdo);
+$adminName = (string)($currentAdmin['username'] ?? ($_SESSION['admin_username'] ?? 'Admin'));
 ?>
 <!DOCTYPE html>
 <html lang="en">

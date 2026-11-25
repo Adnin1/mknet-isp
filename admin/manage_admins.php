@@ -1,42 +1,52 @@
 <?php
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/lib/AdminAuth.php';
 require_once __DIR__ . '/../includes/lib/AdminPasswordPolicy.php';
-if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['admin_id'])) { header("Location: login.php"); exit; }
+$currentAdmin = AdminAuth::requireSuperadmin($pdo);
+
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Referrer-Policy: no-referrer');
 
 $message = '';
 $messageType = '';
-$generatedInviteLink = '';
 
 // Handle Admin Creation / Invitation / Password Reset / Deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $currentAdmin = AdminAuth::requireSuperadmin($pdo);
     if (!csrf_verify()) {
         $message = "Session expired, please try again.";
         $messageType = "error";
     } else {
         // Action: Generate Email Invitation Link
         if (isset($_POST['send_invitation'])) {
-            $email = trim($_POST['email'] ?? '');
-            $role = $_POST['role'] ?? 'admin';
+            $currentAdmin = AdminAuth::requireSuperadmin($pdo);
+            $email = trim((string)($_POST['email'] ?? ''));
+            $role = strtolower(trim((string)($_POST['role'] ?? 'admin')));
             $baseUrl = AdminPasswordPolicy::trustedBaseUrl();
 
-            if ($baseUrl === '') {
+            if (!AdminAuth::isValidRole($role)) {
+                $message = "Invalid administrator role selected.";
+                $messageType = "error";
+            } elseif ($baseUrl === '') {
                 $message = "Trusted MKNET_APP_URL (HTTPS) must be configured before generating invitation links.";
                 $messageType = "error";
             } elseif (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $token = bin2hex(random_bytes(32));
+                $rawToken = bin2hex(random_bytes(32));
+                $tokenHash = hash('sha256', $rawToken);
                 $expiresAt = date('Y-m-d H:i:s', strtotime('+7 days'));
 
                 $stmt = $pdo->prepare("INSERT INTO admin_invitations (email, role, token, expires_at) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$email, $role, $token, $expiresAt]);
+                $stmt->execute([$email, $role, $tokenHash, $expiresAt]);
 
-                $generatedInviteLink = $baseUrl . "/admin/accept_invite.php?token=" . urlencode($token);
+                $inviteLink = $baseUrl . "/admin/accept_invite.php?token=" . urlencode($rawToken);
 
                 try {
-                    Mailer::send($email, $email, "MK Net Admin Invitation", "Hello,\n\nYou have been invited to become an Admin on MK Net.\nRole: $role\n\nClick the link below to accept your invitation:\n$generatedInviteLink\n\nLink expires in 7 days.");
-                } catch (Throwable $t) {}
+                    Mailer::send($email, $email, "MK Net Admin Invitation", "Hello,\n\nYou have been invited to become an Admin on MK Net.\nRole: $role\n\nClick the link below to accept your invitation:\n$inviteLink\n\nLink expires in 7 days.");
+                } catch (Throwable $t) {
+                    app_log('auth', 'Admin invitation mail send failed.');
+                }
 
-                $message = "Invitation link generated successfully for '$email'!";
+                $message = "Invitation generated and sent via email to '$email'!";
                 $messageType = "success";
             } else {
                 $message = "Valid email address is required.";
@@ -46,12 +56,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Action: Direct Create Admin
         if (isset($_POST['create_admin'])) {
-            $username = trim($_POST['username'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            $password = $_POST['password'] ?? '';
-            $role = $_POST['role'] ?? 'admin';
+            $currentAdmin = AdminAuth::requireSuperadmin($pdo);
+            $username = trim((string)($_POST['username'] ?? ''));
+            $email = trim((string)($_POST['email'] ?? ''));
+            $password = (string)($_POST['password'] ?? '');
+            $role = strtolower(trim((string)($_POST['role'] ?? 'admin')));
 
-            if ($username !== '') {
+            if (!AdminAuth::isValidRole($role)) {
+                $message = "Invalid administrator role selected.";
+                $messageType = "error";
+            } elseif ($username !== '') {
                 $policyErrors = AdminPasswordPolicy::validate($password, $username);
                 if ($policyErrors !== []) {
                     $message = $policyErrors[0];
@@ -79,35 +93,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Action: Change Admin Password
         if (isset($_POST['change_password'])) {
+            $currentAdmin = AdminAuth::requireSuperadmin($pdo);
             $targetAdminId = (int)$_POST['admin_id'];
-            $newPassword = $_POST['new_password'] ?? '';
+            $newPassword = (string)($_POST['new_password'] ?? '');
             $uStmt = $pdo->prepare("SELECT username FROM admins WHERE id = ? LIMIT 1");
             $uStmt->execute([$targetAdminId]);
             $targetUsername = (string)($uStmt->fetchColumn() ?: '');
 
-            $policyErrors = AdminPasswordPolicy::validate($newPassword, $targetUsername);
-            if ($policyErrors !== []) {
-                $message = $policyErrors[0];
+            if ($targetUsername === '') {
+                $message = "Target admin account not found.";
                 $messageType = "error";
             } else {
-                try {
-                    $newHash = AdminPasswordPolicy::hash($newPassword);
-                    $stmt = $pdo->prepare("UPDATE admins SET password = ? WHERE id = ?");
-                    $stmt->execute([$newHash, $targetAdminId]);
-                    $message = "Password updated successfully for Admin ID #$targetAdminId!";
-                    $messageType = "success";
-                } catch (Throwable $ex) {
-                    $message = "Unable to update admin password.";
+                $policyErrors = AdminPasswordPolicy::validate($newPassword, $targetUsername);
+                if ($policyErrors !== []) {
+                    $message = $policyErrors[0];
                     $messageType = "error";
+                } else {
+                    try {
+                        $newHash = AdminPasswordPolicy::hash($newPassword);
+                        $stmt = $pdo->prepare("UPDATE admins SET password = ? WHERE id = ?");
+                        $stmt->execute([$newHash, $targetAdminId]);
+                        $message = "Password updated successfully for Admin ID #$targetAdminId!";
+                        $messageType = "success";
+                    } catch (Throwable $ex) {
+                        $message = "Unable to update admin password.";
+                        $messageType = "error";
+                    }
                 }
             }
         }
 
         // Action: Delete Admin
         if (isset($_POST['delete_admin'])) {
+            $currentAdmin = AdminAuth::requireSuperadmin($pdo);
             $targetAdminId = (int)$_POST['admin_id'];
-            if ($targetAdminId === (int)$_SESSION['admin_id']) {
+            if ($targetAdminId === (int)$currentAdmin['id']) {
                 $message = "You cannot delete your own logged-in admin account!";
+                $messageType = "error";
+            } elseif (!AdminAuth::canDeleteOrDemoteAdmin($pdo, $targetAdminId)) {
+                $message = "Cannot delete the last active superadmin account!";
                 $messageType = "error";
             } else {
                 $stmt = $pdo->prepare("DELETE FROM admins WHERE id = ?");
@@ -148,16 +172,6 @@ include __DIR__ . '/header.php';
     <?php if ($message): ?>
         <div style="padding: 14px 20px; border-radius: 8px; margin-bottom: 20px; background: <?= $messageType==='error'?'rgba(239,68,68,0.2)':'rgba(16,185,129,0.2)' ?>; border: 1px solid <?= $messageType==='error'?'#ef4444':'#10b981' ?>; color: <?= $messageType==='error'?'#fca5a5':'#6ee7b7' ?>;">
             <?= h($message) ?>
-        </div>
-    <?php endif; ?>
-
-    <?php if ($generatedInviteLink): ?>
-        <div style="padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; background: rgba(99,102,241,0.2); border: 1px solid #6366f1; color: #fff;">
-            <strong>📬 Admin Invitation Link Generated:</strong>
-            <div style="display: flex; gap: 10px; margin-top: 8px;">
-                <input type="text" readonly id="inviteLinkInput" value="<?= h($generatedInviteLink) ?>" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(15,23,42,0.9); border: 1px solid rgba(255,255,255,0.2); color: #34d399; font-weight: 700; font-size: 0.9rem;">
-                <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('inviteLinkInput').value); alert('Invitation link copied to clipboard!');" style="background: #10b981; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; white-space: nowrap;">Copy Link</button>
-            </div>
         </div>
     <?php endif; ?>
 

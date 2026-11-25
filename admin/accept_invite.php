@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/lib/AdminAuth.php';
 require_once __DIR__ . '/../includes/lib/AdminPasswordPolicy.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -16,11 +17,13 @@ $invite = null;
 
 if ($token !== '') {
     $now = date('Y-m-d H:i:s');
+    $tokenHash = hash('sha256', $token);
     $stmt = $pdo->prepare("SELECT * FROM admin_invitations WHERE token = ? AND status = 'pending' AND expires_at >= ? LIMIT 1");
-    $stmt->execute([$token, $now]);
+    $stmt->execute([$tokenHash, $now]);
     $invite = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$invite) {
+    if (!$invite || !AdminAuth::isValidRole(strtolower(trim((string)($invite['role'] ?? ''))))) {
+        $invite = null;
         $error = "Invalid or expired admin invitation token.";
     }
 } else {

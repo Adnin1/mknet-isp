@@ -4,7 +4,9 @@
   <ul class="menu">
     <li style="font-size: 0.75rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 12px 0 4px 12px; letter-spacing: 1px;">Core Management</li>
     <li><a href="dashboard.php"><i class="fa-solid fa-chart-pie" style="color:#818cf8;"></i> Dashboard</a></li>
+    <?php if (isset($currentAdmin['role']) && strtolower((string)$currentAdmin['role']) === 'superadmin'): ?>
     <li><a href="manage_admins.php"><i class="fa-solid fa-user-shield" style="color:#38bdf8;"></i> Admin Users & Invites</a></li>
+    <?php endif; ?>
     <li><a href="manage_users.php"><i class="fa-solid fa-users" style="color:#34d399;"></i> Customers & Status</a></li>
     
     <li style="font-size: 0.75rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 16px 0 4px 12px; letter-spacing: 1px;">Packages & Billing</li>

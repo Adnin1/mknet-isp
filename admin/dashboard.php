@@ -2,11 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
-if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['admin_id'])) {
-  header("Location: login.php");
-  exit;
-}
+require_once __DIR__ . '/../includes/lib/AdminAuth.php';
+$currentAdmin = AdminAuth::requireAdmin($pdo);
 
 $userCount = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $packageCount = (int)$pdo->query("SELECT COUNT(*) FROM packages")->fetchColumn();

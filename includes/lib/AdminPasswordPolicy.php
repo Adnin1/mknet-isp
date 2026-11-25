@@ -193,6 +193,7 @@ final class AdminPasswordPolicy
 
     /**
      * Non-session-local persistent rate limit check backed by DB table auth_rate_limits.
+     * Fails closed (returns false) on DB/schema error without executing request-time DDL.
      */
     public static function checkPersistentRateLimit(
         \PDO $pdo,
@@ -201,28 +202,34 @@ final class AdminPasswordPolicy
         int $maxAttempts = 5,
         int $windowSeconds = 900
     ): bool {
-        self::ensureRateLimitTable($pdo);
-        $key = hash('sha256', $scope . '|' . $identifier);
-        $now = time();
+        try {
+            $key = hash('sha256', $scope . '|' . $identifier);
+            $now = time();
 
-        $stmt = $pdo->prepare('SELECT attempts, window_start FROM auth_rate_limits WHERE rate_key = ? LIMIT 1');
-        $stmt->execute([$key]);
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            // Opportunistic bounded cleanup of expired records
+            $pdo->prepare('DELETE FROM auth_rate_limits WHERE expires_at < ?')->execute([$now]);
 
-        if (!$row) {
-            return true;
+            $stmt = $pdo->prepare('SELECT attempts, window_start FROM auth_rate_limits WHERE rate_key = ? LIMIT 1');
+            $stmt->execute([$key]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                return true;
+            }
+
+            if (($now - (int)$row['window_start']) > $windowSeconds) {
+                $pdo->prepare('DELETE FROM auth_rate_limits WHERE rate_key = ?')->execute([$key]);
+                return true;
+            }
+
+            return (int)$row['attempts'] < $maxAttempts;
+        } catch (\Throwable $e) {
+            return false;
         }
-
-        if (($now - (int)$row['window_start']) > $windowSeconds) {
-            $pdo->prepare('DELETE FROM auth_rate_limits WHERE rate_key = ?')->execute([$key]);
-            return true;
-        }
-
-        return (int)$row['attempts'] < $maxAttempts;
     }
 
     /**
-     * Record a rate-limited attempt in auth_rate_limits (works in SQLite and MySQL/MariaDB).
+     * Record a rate-limited attempt atomically in auth_rate_limits (no request-time DDL).
      */
     public static function recordRateLimitAttempt(
         \PDO $pdo,
@@ -230,33 +237,34 @@ final class AdminPasswordPolicy
         string $identifier,
         int $windowSeconds = 900
     ): void {
-        self::ensureRateLimitTable($pdo);
         $key = hash('sha256', $scope . '|' . $identifier);
         $now = time();
+        $expiresAt = $now + $windowSeconds;
+        $driver = strtolower((string)$pdo->getAttribute(\PDO::ATTR_DRIVER_NAME));
 
-        $stmt = $pdo->prepare('SELECT attempts, window_start FROM auth_rate_limits WHERE rate_key = ? LIMIT 1');
-        $stmt->execute([$key]);
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        try {
+            if ($driver === 'sqlite') {
+                $pdo->prepare(
+                    'INSERT INTO auth_rate_limits (rate_key, attempts, window_start, expires_at)
+                     VALUES (?, 1, ?, ?)
+                     ON CONFLICT(rate_key) DO UPDATE SET
+                       attempts = CASE WHEN (? - auth_rate_limits.window_start) > ? THEN 1 ELSE auth_rate_limits.attempts + 1 END,
+                       window_start = CASE WHEN (? - auth_rate_limits.window_start) > ? THEN ? ELSE auth_rate_limits.window_start END,
+                       expires_at = ?'
+                )->execute([$key, $now, $expiresAt, $now, $windowSeconds, $now, $windowSeconds, $now, $expiresAt]);
+                return;
+            }
 
-        if (!$row || ($now - (int)$row['window_start']) > $windowSeconds) {
-            $pdo->prepare('DELETE FROM auth_rate_limits WHERE rate_key = ?')->execute([$key]);
-            $pdo->prepare('INSERT INTO auth_rate_limits (rate_key, attempts, window_start) VALUES (?, 1, ?)')
-                ->execute([$key, $now]);
-            return;
+            $pdo->prepare(
+                'INSERT INTO auth_rate_limits (rate_key, attempts, window_start, expires_at)
+                 VALUES (?, 1, ?, ?)
+                 ON DUPLICATE KEY UPDATE
+                   attempts = IF((? - window_start) > ?, 1, attempts + 1),
+                   window_start = IF((? - window_start) > ?, ?, window_start),
+                   expires_at = ?'
+            )->execute([$key, $now, $expiresAt, $now, $windowSeconds, $now, $windowSeconds, $now, $expiresAt]);
+        } catch (\Throwable $e) {
+            // Fail closed on next checkPersistentRateLimit if schema/DB is unavailable
         }
-
-        $pdo->prepare('UPDATE auth_rate_limits SET attempts = attempts + 1 WHERE rate_key = ?')
-            ->execute([$key]);
-    }
-
-    private static function ensureRateLimitTable(\PDO $pdo): void
-    {
-        $pdo->exec(
-            'CREATE TABLE IF NOT EXISTS auth_rate_limits (
-                rate_key VARCHAR(128) PRIMARY KEY,
-                attempts INT NOT NULL,
-                window_start INT NOT NULL
-            )'
-        );
     }
 }

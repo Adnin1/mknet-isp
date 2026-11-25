@@ -24,9 +24,19 @@ if (!function_exists('mknet_is_local_simulation_request')) {
 // this file first.
 // ---------------------------------------------------------------------
 if (session_status() === PHP_SESSION_NONE) {
+    $mknetSessionEnv = strtolower(trim((string)(getenv('MKNET_ENV') ?: '')));
+    $trustedProxyHttps = (getenv('MKNET_TRUSTED_PROXY_HTTPS') === '1')
+        && strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    $isHttpsRequest = (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+        || ((string)($_SERVER['SERVER_PORT'] ?? '') === '443')
+        || $trustedProxyHttps;
+
     ini_set('session.use_strict_mode', '1');
     ini_set('session.cookie_httponly', '1');
     ini_set('session.cookie_samesite', 'Lax');
+    if ($mknetSessionEnv === 'production' || $isHttpsRequest) {
+        ini_set('session.cookie_secure', '1');
+    }
 }
 
 // ---------------------------------------------------------------------
