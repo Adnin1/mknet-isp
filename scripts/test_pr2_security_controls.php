@@ -69,7 +69,8 @@ function testHttpSapiEnv(?string $envVal): int {
         $prev[$k] = getenv($k);
         if ($v === null) putenv($k); else putenv("{$k}={$v}");
     }
-    $desc = [0 => ['pipe', 'r'], 1 => ['file', $tmpDir . '/srv_out.log', 'a'], 2 => ['file', $tmpDir . '/srv_err.log', 'a']];
+    $nullSink = PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
+    $desc = [0 => ['pipe', 'r'], 1 => ['file', $nullSink, 'w'], 2 => ['file', $nullSink, 'w']];
     $proc = proc_open(escapeshellarg($php) . " -S 127.0.0.1:{$port} -t " . escapeshellarg($tmpDir), $desc, $pipes);
     foreach ($prev as $k => $v) {
         if ($v === false) putenv($k); else putenv("{$k}={$v}");
@@ -237,7 +238,8 @@ $prevAppUrl = getenv('MKNET_APP_URL');
 $prevEnv = getenv('MKNET_ENV');
 putenv('MKNET_APP_URL=https://admin.mknet.test');
 putenv('MKNET_ENV=production');
-$desc = [0 => ['pipe', 'r'], 1 => ['file', $sapiDir . '/srv_out.log', 'a'], 2 => ['file', $sapiDir . '/srv_err.log', 'a']];
+$nullSink = PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
+$desc = [0 => ['pipe', 'r'], 1 => ['file', $nullSink, 'w'], 2 => ['file', $nullSink, 'w']];
 $proc = proc_open(escapeshellarg($php) . " -S 127.0.0.1:{$port} -t " . escapeshellarg($sapiDir), $desc, $pipes);
 if ($prevAppUrl === false) putenv('MKNET_APP_URL'); else putenv("MKNET_APP_URL={$prevAppUrl}");
 if ($prevEnv === false) putenv('MKNET_ENV'); else putenv("MKNET_ENV={$prevEnv}");
@@ -446,8 +448,11 @@ $badCsrf = $httpReq('POST', '/admin/manage_admins.php', [
 ], $saCookie);
 check("CSRF-invalid POST to manage_admins.php is rejected", str_contains($badCsrf['body'], 'Session expired') && (int)$pdoCheck->query("SELECT COUNT(*) FROM admins WHERE username='csrfuser'")->fetchColumn() === 0);
 
-// Test last-superadmin protection (create a temporary second superadmin? No, id=7 is the ONLY superadmin; test deleting id=7 as another superadmin or via AdminAuth::canDeleteOrDemoteAdmin)
-check("AdminAuth::canDeleteOrDemoteAdmin blocks deleting the last active superadmin", !AdminAuth::canDeleteOrDemoteAdmin($pdoCheck, 7) && AdminAuth::canDeleteOrDemoteAdmin($pdoCheck, 8));
+// Test last-superadmin protection via AdminAuth::deleteAdminSafely
+$delLastSuper = AdminAuth::deleteAdminSafely($pdoCheck, 8, 7);
+check("AdminAuth::deleteAdminSafely blocks deleting the last active superadmin", $delLastSuper['ok'] === false && (int)$pdoCheck->query("SELECT COUNT(*) FROM admins WHERE id=7")->fetchColumn() === 1);
+$delSelf = AdminAuth::deleteAdminSafely($pdoCheck, 7, 7);
+check("AdminAuth::deleteAdminSafely blocks self-deletion", $delSelf['ok'] === false);
 
 echo "\n=== 6. Session Cookie Hardening, Logout & Zero Request-Time DDL ===\n";
 [$rcSessProd, $outSessProd] = runPhpWithEnv(

@@ -324,6 +324,16 @@ if (!$pdo) {
 // Auto-bootstrap DB schema if required tables are missing
 ensure_mknet_db_schema($pdo);
 
+// Centralized pre-handler session timeout, DB account, and password-reset revocation enforcement
+// for all protected admin routes (executes before any page-specific GET/POST handler runs).
+if (PHP_SAPI !== 'cli') {
+    $scriptPath = str_replace('\\', '/', (string)($_SERVER['SCRIPT_FILENAME'] ?? $_SERVER['SCRIPT_NAME'] ?? ''));
+    if ($scriptPath !== '' && preg_match('#/admin/(?!login\.php$|logout\.php$|forgot_password\.php$|reset_password\.php$|accept_invite\.php$)[^/]+\.php$#i', $scriptPath)) {
+        require_once __DIR__ . '/includes/lib/AdminAuth.php';
+        $currentAdmin = AdminAuth::requireAdmin($pdo);
+    }
+}
+
 /**
  * Self-healing DB Schema Bootstrapper
  * Automatically creates any missing tables or columns required by MK Net.

@@ -127,17 +127,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['delete_admin'])) {
             $currentAdmin = AdminAuth::requireSuperadmin($pdo);
             $targetAdminId = (int)$_POST['admin_id'];
-            if ($targetAdminId === (int)$currentAdmin['id']) {
-                $message = "You cannot delete your own logged-in admin account!";
-                $messageType = "error";
-            } elseif (!AdminAuth::canDeleteOrDemoteAdmin($pdo, $targetAdminId)) {
-                $message = "Cannot delete the last active superadmin account!";
-                $messageType = "error";
-            } else {
-                $stmt = $pdo->prepare("DELETE FROM admins WHERE id = ?");
-                $stmt->execute([$targetAdminId]);
+            $delRes = AdminAuth::deleteAdminSafely($pdo, (int)$currentAdmin['id'], $targetAdminId);
+            if ($delRes['ok']) {
                 $message = "Admin account removed successfully.";
                 $messageType = "success";
+            } else {
+                $message = $delRes['error'];
+                $messageType = "error";
             }
         }
     }

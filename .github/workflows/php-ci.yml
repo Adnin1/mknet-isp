@@ -25,8 +25,12 @@ jobs:
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
           php-version: ${{ matrix.php-version }}
-          extensions: curl, json, openssl, pdo, pdo_mysql, pdo_sqlite
+          extensions: curl, intl, json, mbstring, openssl, pdo, pdo_mysql, pdo_sqlite
           coverage: none
+
+      - name: Run PR #2 security regression suite
+        shell: bash
+        run: php scripts/test_pr2_security_controls.php
 
       - name: Lint every tracked PHP file
         shell: bash
@@ -85,3 +89,44 @@ jobs:
             echo "Initial commit on branch; checking against empty tree"
             git diff --check 4b825dc642cb6eb9a060e54bf8d69288fbee4904 HEAD --
           fi
+
+  mariadb-integration:
+    name: MariaDB rate-limiter & concurrency (${{ matrix.mariadb-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mariadb-version: ['10.11', '11.4']
+    services:
+      mariadb:
+        image: mariadb:${{ matrix.mariadb-version }}
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+          MARIADB_DATABASE: mknet_ci_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        with:
+          php-version: '8.3'
+          extensions: intl, json, mbstring, pdo, pdo_mysql
+          coverage: none
+
+      - name: Run MariaDB migration & concurrency integration tests
+        shell: bash
+        env:
+          MKNET_TEST_DB_HOST: '127.0.0.1'
+          MKNET_TEST_DB_PORT: '3306'
+          MKNET_TEST_DB_NAME: 'mknet_ci_test'
+          MKNET_TEST_DB_USER: 'root'
+          MKNET_TEST_DB_PASS: ''
+        run: php scripts/test_mariadb_rate_limit_and_concurrency.php

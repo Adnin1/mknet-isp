@@ -98,6 +98,93 @@ final class AdminAuth
         return $count > 1;
     }
 
+    /**
+     * Atomically and concurrently safely delete an admin account using deterministic
+     * row locking (SELECT ... ORDER BY id ASC FOR UPDATE on MySQL/MariaDB, IMMEDIATE on SQLite).
+     *
+     * @return array{ok:bool, error:string}
+     */
+    public static function deleteAdminSafely(\PDO $pdo, int $actorAdminId, int $targetAdminId): array
+    {
+        if ($targetAdminId <= 0) {
+            return ['ok' => false, 'error' => 'Invalid admin account ID.'];
+        }
+        if ($actorAdminId === $targetAdminId) {
+            return ['ok' => false, 'error' => 'You cannot delete your own logged-in admin account!'];
+        }
+
+        $driver = strtolower((string)$pdo->getAttribute(\PDO::ATTR_DRIVER_NAME));
+        $startedTx = false;
+        try {
+            if ($driver === 'sqlite') {
+                $pdo->exec('BEGIN IMMEDIATE');
+                $startedTx = true;
+                $stmt = $pdo->prepare("SELECT id, role FROM admins WHERE role = 'superadmin' OR id = ? ORDER BY id ASC");
+            } else {
+                $pdo->beginTransaction();
+                $startedTx = true;
+                $stmt = $pdo->prepare("SELECT id, role FROM admins WHERE role = 'superadmin' OR id = ? ORDER BY id ASC FOR UPDATE");
+            }
+
+            $stmt->execute([$targetAdminId]);
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            $targetRow = null;
+            $superCount = 0;
+            foreach ($rows as $row) {
+                $rid = (int)$row['id'];
+                $rrole = strtolower(trim((string)($row['role'] ?? '')));
+                if ($rrole === 'superadmin') {
+                    $superCount++;
+                }
+                if ($rid === $targetAdminId) {
+                    $targetRow = $row;
+                }
+            }
+
+            if ($targetRow === null) {
+                if ($driver === 'sqlite') {
+                    $pdo->exec('ROLLBACK');
+                } else {
+                    $pdo->rollBack();
+                }
+                return ['ok' => false, 'error' => 'Target admin account not found.'];
+            }
+
+            $targetRole = strtolower(trim((string)($targetRow['role'] ?? '')));
+            if ($targetRole === 'superadmin' && $superCount <= 1) {
+                if ($driver === 'sqlite') {
+                    $pdo->exec('ROLLBACK');
+                } else {
+                    $pdo->rollBack();
+                }
+                return ['ok' => false, 'error' => 'Cannot delete the last active superadmin account!'];
+            }
+
+            $del = $pdo->prepare('DELETE FROM admins WHERE id = ?');
+            $del->execute([$targetAdminId]);
+
+            if ($driver === 'sqlite') {
+                $pdo->exec('COMMIT');
+            } else {
+                $pdo->commit();
+            }
+            return ['ok' => true, 'error' => ''];
+        } catch (\Throwable $e) {
+            if ($startedTx) {
+                try {
+                    if ($driver === 'sqlite') {
+                        $pdo->exec('ROLLBACK');
+                    } elseif ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+                } catch (\Throwable $ignored) {
+                }
+            }
+            return ['ok' => false, 'error' => 'Unable to remove admin account safely right now.'];
+        }
+    }
+
     public static function destroySessionAndCookie(): void
     {
         if (session_status() === PHP_SESSION_NONE) {

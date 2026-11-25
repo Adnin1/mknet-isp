@@ -39,8 +39,9 @@ mysql -u your_db_user -p your_db_name < migrations/2026_07_23_performance_and_cl
 mysql -u your_db_user -p your_db_name < migrations/2026_07_24_database_fixes.sql
 mysql -u your_db_user -p your_db_name < migrations/2026_07_25_feature_upgrade.sql
 mysql -u your_db_user -p your_db_name < migrations/2026_07_26_tickets_and_billing.sql
+mysql -u your_db_user -p your_db_name < migrations/2026_11_26_auth_rate_limits.sql
 ```
-All four are safe to re-run if you're ever unsure whether they already ran.
+All listed migrations are safe to re-run if you're ever unsure whether they already ran.
 
 ## 4b. Set up the recurring billing cron job
 ```bash
