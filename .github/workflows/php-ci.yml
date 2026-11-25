@@ -66,11 +66,34 @@ jobs:
     name: Patch hygiene
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository with full history
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Check pull request patch whitespace
         if: github.event_name == 'pull_request'
-        run: git diff --check HEAD^1 HEAD
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          echo "Comparing pull request base $BASE_SHA to head $HEAD_SHA"
+          git fetch origin "$BASE_SHA" --depth=1 || true
+          git fetch origin "$HEAD_SHA" --depth=1 || true
+          git diff --check "$BASE_SHA...$HEAD_SHA"
+
       - name: Check latest commit whitespace on push
         if: github.event_name == 'push'
-        run: git diff --check HEAD^ HEAD
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "Initial commit or new branch; checking against empty tree"
+            git diff --check 4b825dc642cb6eb9a060e54bf8d69288fbee4904 "$AFTER"
+          else
+            echo "Checking push commits between $BEFORE and $AFTER"
+            git diff --check "$BEFORE...$AFTER"
+          fi
