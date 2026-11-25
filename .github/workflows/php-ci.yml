@@ -71,29 +71,16 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Check pull request patch whitespace
-        if: github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-          if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
-            echo "::error::Missing pull_request base or head SHA."
-            exit 1
-          fi
-          echo "Comparing pull request base $BASE_SHA to head $HEAD_SHA"
-          git fetch --no-tags --depth=1 origin "$BASE_SHA"
-          git fetch --no-tags --depth=1 origin "$HEAD_SHA"
-          git diff --check "$BASE_SHA" "$HEAD_SHA" --
-
-      - name: Check latest commit whitespace on push
-        if: github.event_name == 'push'
+      - name: Check patch whitespace (PR and Push)
         shell: bash
         run: |
           set -euo pipefail
           if git rev-parse --verify HEAD^1 >/dev/null 2>&1; then
+            echo "Checking patch against parent HEAD^1"
             git diff --check HEAD^1 HEAD --
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "::error::Parent commit HEAD^1 unavailable for pull_request diff-check."
+            exit 1
           else
             echo "Initial commit on branch; checking against empty tree"
             git diff --check 4b825dc642cb6eb9a060e54bf8d69288fbee4904 HEAD --
